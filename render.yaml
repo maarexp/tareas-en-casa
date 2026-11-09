@@ -4,17 +4,15 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    branch: main
-    buildCommand: npm install
+    buildCommand: npm install --omit=dev
     startCommand: npm start
     healthCheckPath: /api/health
-    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
-      - key: REQUIRE_POSTGRES
-        value: "1"
       - key: APP_SECRET
         generateValue: true
+      - key: REQUIRE_POSTGRES
+        value: "1"
       - key: DATABASE_URL
         sync: false

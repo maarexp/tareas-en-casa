@@ -1,0 +1,10 @@
+node_modules
+.data
+.env
+.git
+.gitignore
+README.md
+README-GRATIS.md
+*.zip
+test
+nginx-tareas.conf

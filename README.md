@@ -1,61 +1,83 @@
-# En Casa — Edu & Minerva 🏡
+# En Casa — Edu y Minerva | Publicación sin pagar Replit
 
-App web colaborativa y adaptable a móvil, preparada para Replit. Interfaz en español y estilo cálido.
+La app permite que los dos veáis y cambiéis las mismas tareas, con usuarios Edu y Minerva, código familiar de acceso, tareas recurrentes y marcas sincronizadas.
 
-## Funciones
+## Opción A (recomendada): tu VPS actual, sin coste adicional
 
-- Dos perfiles: Edu y Minerva, protegidos por un **código compartido** (mínimo ocho caracteres).
-- Tareas por día, semanales, quincenales (cada 14 días) y mensuales.
-- Marcado de completadas, reasignación puntual y actividad reciente sincronizada.
-- Alta, edición y eliminación de tareas y selección de responsable.
-- Horarios de **prácticas**, **turno de mañana** y **turno de tarde** para Minerva.
-- Tareas de los gatos, cocina/táper, suelo diario, dormitorios, baños, terrazas, etc.
-- Alergia de Edu: **quitar polvo asignado a Minerva**.
-- Diseño responsive y opción de añadir a la pantalla de inicio (PWA básica).
+La aplicación usa Docker y guarda los datos en un volumen persistente del VPS: **NO necesitas comprar una base de datos**.
 
-## Desarrollo local
+### 1. Poner en marcha
 
-Se necesita Node.js 20 o superior.
+Requisitos: Docker, Docker Compose (plugin), Nginx y un subdominio apuntando al VPS.
+
+1. Copia esta carpeta al VPS, por ejemplo en `/opt/en-casa`.
+2. En `/opt/en-casa` ejecuta:
 
 ```bash
-npm install
-npm start
+cp .env.example .env
+printf 'APP_SECRET=%s\n' "$(openssl rand -hex 32)" > .env
+chmod 600 .env
+docker compose up -d --build
+docker compose ps
+curl http://127.0.0.1:3100/api/health
 ```
 
-Abre `http://localhost:3000`. En local, sin `DATABASE_URL`, se guarda en `.data/hogar.json`.
+La respuesta de `/api/health` debe contener `"backend":"persistent-file"`.
+El puerto 3100 está limitado a `127.0.0.1` y no se expone directamente a Internet.
 
-## Publicación gratuita en Render + Neon
+### 2. Subdominio con HTTPS
 
-1. En **Neon**, crea un proyecto (región Frankfurt) y copia la *connection string* (`postgresql://…?sslmode=require`). No la subas a Git.
-2. En **Render**, pulsa **New → Blueprint** y selecciona este repositorio. Render lee `render.yaml` y crea el servicio `en-casa-edu-minerva` en el plan **Free**.
-3. Cuando te pida `DATABASE_URL`, pega la conexión de Neon. `APP_SECRET` se genera solo; `REQUIRE_POSTGRES=1` impide arrancar sin base de datos.
-4. Comprueba `https://<tu-servicio>.onrender.com/api/health` → `{"ok":true,"backend":"postgres"}`.
-
-Render Free suspende el servicio tras 15 minutos sin uso; la primera carga posterior tarda alrededor de un minuto. Los datos se mantienen en Neon.
-
-## Publicación en Replit
-
-1. Importa los archivos de este ZIP como proyecto **Node.js** en Replit.
-2. En el entorno del proyecto, instala dependencias (`npm install`) y configura **PostgreSQL** (la base de datos gestionada de Replit). Asegúrate de que la URL de la base de datos esté disponible como **secreto `DATABASE_URL`**, también en el entorno de publicación.
-3. Añade un secreto `APP_SECRET` con **al menos 32 caracteres aleatorios**. No lo compartas ni lo subas a Git.
-4. Ejecuta `npm start` y abre la vista previa. Comprueba `GET /api/health`: en una publicación con base de datos debe responder `"backend":"postgres"`.
-5. Publica desde Replit (Deploy/Publish) usando el puerto `process.env.PORT`. Revisa los posibles costes según tu plan de Replit.
-6. Abre la URL publicada, elige un perfil, crea un código de acceso de 8 o más caracteres y compártelo **por un canal privado** con tu pareja. No publiques el PIN en el código ni en Git.
-7. En cada móvil, abre la URL y usa **Añadir a pantalla de inicio** para tener acceso rápido.
-
-**No publiques con el almacenamiento local de desarrollo**: los archivos locales pueden no persistir en los despliegues y se perderían las tareas completadas. Replit PostgreSQL es esencial para sincronización y persistencia entre dispositivos.
-
-## Seguridad y limitaciones
-
-- Acceso mediante un PIN compartido: suficiente para un hogar pequeño, pero no son cuentas individuales con contraseñas distintas. Cualquiera que conozca el PIN puede usar ambos perfiles; no reutilices contraseñas personales.
-- Las sesiones están firmadas con HMAC y el PIN se almacena mediante `scrypt` con sal aleatoria.
-- El estado y el historial se guardan en una única tabla de PostgreSQL.
-- Se consulta el servidor cada 12 segundos cuando la app está activa; no es sincronización instantánea por WebSocket.
-- La app **no envía notificaciones push** ni mensajes automáticos.
-- Las tareas iniciales son **orientativas**: se pueden modificar en la pantalla *Todas las tareas*.
-
-## Pruebas
+Crea un registro DNS A para `tareas.embasdf.cat` apuntando a la IP pública de tu VPS (o utiliza otro subdominio). Ajusta `server_name` en `nginx-tareas.conf` si hace falta y ejecuta:
 
 ```bash
-npm test
+sudo cp nginx-tareas.conf /etc/nginx/sites-available/tareas
+sudo ln -s /etc/nginx/sites-available/tareas /etc/nginx/sites-enabled/tareas
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d tareas.embasdf.cat
 ```
+
+Si ya existe el enlace simbólico, no lo crees otra vez. No modifiques otras configuraciones de tu VPS.
+La app quedará en `https://tareas.embasdf.cat` si has configurado correctamente DNS y certificado.
+
+### 3. Acceso y mantenimiento
+
+En la primera visita, crea un código familiar de al menos 8 caracteres y elige el perfil. El segundo móvil entra con ese mismo código, eligiendo el otro perfil. No empleéis la contraseña de cuentas personales.
+
+```bash
+# Logs
+cd /opt/en-casa && docker compose logs -f --tail=80
+
+# Copia de seguridad del calendario, en el equipo VPS
+cd /opt/en-casa && docker compose exec -T en-casa cat /data/hogar.json > "en-casa-copia-$(date +%Y-%m-%d).json"
+
+# Actualizaciones sin destruir los datos
+cd /opt/en-casa && docker compose up -d --build
+```
+
+**No ejecutes `docker compose down -v`**, porque `-v` elimina el volumen con los datos. Haz copias de seguridad periódicas.
+
+## Opción B (hosting gratuito externo): Render + Neon PostgreSQL
+
+A diferencia del VPS, Render Free se duerme tras 15 minutos sin tráfico y puede tardar alrededor de un minuto en reactivarse. El PostgreSQL Free de Render caduca a los 30 días, por eso usamos **Neon**, no la base de datos de Render. Su plan gratuito tiene límites de uso y almacenamiento.
+
+1. Crea un proyecto gratuito en https://neon.com y copia su **connection string** PostgreSQL desde `Connect` (con `sslmode=require`). Mantén la cadena privada.
+2. Sube estos archivos a un repositorio **privado** de GitHub. `render.yaml` permite crear el servicio desde un Blueprint, o puedes crear manualmente un Web Service Node.js en https://dashboard.render.com.
+3. En Render selecciona `Free`, configuración `npm install --omit=dev` / `npm start`, y añade los secrets:
+   - `DATABASE_URL`: conexión de Neon.
+   - `APP_SECRET`: 32 caracteres aleatorios como mínimo (el Blueprint lo genera).
+   - `REQUIRE_POSTGRES`: `1`.
+4. Publica. Verifica `https://<tu-servicio>.onrender.com/api/health` y que diga `"backend":"postgres"`.
+5. Abre la dirección desde ambos móviles; configura el PIN familiar una sola vez.
+
+**Importante:** si no hay `DATABASE_URL`, el servidor se detendrá en Render para evitar que guardéis tareas en un disco efímero. El alojamiento gratuito no garantiza disponibilidad continua y puede tener límites de uso. Conviene exportar copias de seguridad de la base de datos.
+
+## Características y seguridad
+
+- PIN compartido y perfiles Edu y Minerva: no son dos cuentas independientes.
+- Los datos permanecen en un archivo duradero (en VPS) o en PostgreSQL (Render+Neon), visibles desde ambos dispositivos.
+- Sin notificaciones push; sincronización mediante comprobaciones periódicas (aprox. 12 segundos).
+- No es necesario pagar por Replit ni activar servicios de pago.
+- No subas `.env`, el PIN ni `DATABASE_URL` a repositorios públicos o capturas.
+- Una vez publicada, la web se puede añadir a la pantalla de inicio del móvil.
+
+Pruebas: `npm test` con Node.js 20+.
