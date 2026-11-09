@@ -26,7 +26,7 @@ const avatar=who=>who==='Ambos'?'<span class="avatar-pair"><span class="avatar e
 const store={get(k){try{return localStorage.getItem(k);}catch{return null;}},set(k,v){try{localStorage.setItem(k,v);}catch{}}};
 const isMobile=()=>matchMedia('(max-width: 899px)').matches;
 
-let state=null,configured=false,view='hoy',frequencyFilter='all',assignContext=null,popKey=null;
+let state=null,configured=false,view='hoy',frequencyFilter='all',assignContext=null,popKey=null,workdayDate=null,movedKeys=new Set();
 let actor=store.get('hogar-actor')==='Minerva'?'Minerva':'Edu';
 let personFilter=['Edu','Minerva'].includes(store.get('hogar-filter'))?store.get('hogar-filter'):'Todos';
 let selected=todayDate(),lastToday=iso(new Date());
@@ -67,7 +67,14 @@ async function refresh(){const s=await api('/api/state');if(pending>0)return;sta
 // ---------- Lógica de tareas ----------
 function orderTask(a,b){return CAT_ORDER.indexOf(a.category)-CAT_ORDER.indexOf(b.category)||a.title.localeCompare(b.title,'es');}
 function occurs(t,d){switch(t.frequency){case 'daily':return true;case 'weekly':return t.weekday===dow(d);case 'fortnightly':return dateDiff(d,fromIso(t.anchorDate))>=0&&dateDiff(d,fromIso(t.anchorDate))%14===0;case 'monthly':return d.getDate()===t.monthDay;case 'once':return iso(d)===t.date;default:return false;}}
-function assigned(t,d){const key=`${t.id}@${iso(d)}`;if(state.overrides[key])return state.overrides[key];let a=(t.plan?.[state.settings.mode]||t.plan?.practicas)?.[dow(d)]||t.assignee;return a==='Alterno'?(weekNumber(d)%2===0?'Edu':'Minerva'):a;}
+// ---------- Teletrabajo de Edu ----------
+const teleDays=()=>state.teleworkDays||[1,4];
+const isWorkday=d=>dow(d)<5;
+const habitualPlace=d=>teleDays().includes(dow(d))?'casa':'oficina';
+const placeOf=d=>(isWorkday(d)&&state.workdays?.[iso(d)])||habitualPlace(d);
+// Con un cambio puntual, las tareas diarias de ese día se reparten como un día tipo: el de teletrabajo (martes) o el de oficina (lunes).
+function planDay(d){const w=state.workdays?.[iso(d)];if(!w||!isWorkday(d)||w===habitualPlace(d))return dow(d);return w==='casa'?teleDays()[0]:[0,1,2,3,4].find(i=>!teleDays().includes(i));}
+function assigned(t,d){const key=`${t.id}@${iso(d)}`;if(state.overrides[key])return state.overrides[key];let a=(t.plan?.[state.settings.mode]||t.plan?.practicas)?.[planDay(d)]||t.assignee;return a==='Alterno'?(weekNumber(d)%2===0?'Edu':'Minerva'):a;}
 function forPerson(t,d,who){if(!who||who==='Todos')return true;const a=assigned(t,d);return a===who||a==='Ambos';}
 function tasksFor(d,who='Todos'){return state.tasks.filter(t=>occurs(t,d)&&forPerson(t,d,who)).sort((a,b)=>FREQ_ORDER.indexOf(a.frequency)-FREQ_ORDER.indexOf(b.frequency)||orderTask(a,b));}
 function completed(t,d){return Boolean(state.completions[`${t.id}@${iso(d)}`]);}
@@ -94,6 +101,7 @@ function renderToday(){
   $('#day-eyebrow').textContent=dayEyebrow(selected);
   $('#today-title').textContent=capitalize(prettyDate(selected,{weekday:'long',day:'numeric',month:'long'}));
   $('#today-day').hidden=isToday;
+  renderWorkday();
 
   const anchor=monday(selected);
   $('#week-strip').innerHTML=Array.from({length:7},(_,i)=>{
@@ -125,12 +133,19 @@ function renderToday(){
     return `<div class="person-stat"><div class="stat-top">${avatar(who)}<strong>${who}</strong><small>${complete} / ${tasks}</small></div><div class="bar-track"><div class="bar-fill ${who.toLowerCase()}" style="width:${p}%"></div></div></div>`;
   }).join('');
 }
+function renderWorkday(){
+  const chip=$('#workday-chip');chip.hidden=!isWorkday(selected);if(chip.hidden)return;
+  const place=placeOf(selected),changed=place!==habitualPlace(selected),home=place==='casa';
+  chip.className=`workday-chip ${place}${changed?' changed':''}`;
+  chip.setAttribute('aria-label',`Edu ${home?'teletrabaja':'va a la oficina'} este día${changed?' (cambio puntual)':''}. Cambiar`);
+  chip.innerHTML=`${icon(home?'home':'briefcase')}<span>${home?'Edu en casa':'Edu en la oficina'}</span>${changed?'<span class="tag">Puntual</span>':''}${icon('down','xs')}`;
+}
 function renderRow(t,d){
   const k=iso(d),key=`${t.id}@${k}`,done=completed(t,d),person=assigned(t,d),by=state.completions[key]?.by;
   const meta=[t.category,`${Number(t.minutes)||10} min`];if(t.optional)meta.push('Si hace falta');if(done&&by)meta.push(`Hecho por ${by}`);
   return `<div class="task-row${done?' done':''}${popKey===key?' pop':''}">`+
     `<button class="task-hit" data-toggle="${safe(t.id)}" data-date="${k}" aria-pressed="${done}"><span class="task-check">${icon('check')}</span><span class="task-emoji" aria-hidden="true">${safe(emojiOf(t))}</span><span class="task-main"><strong>${safe(t.title)}</strong><small>${safe(meta.join(' · '))}</small></span></button>`+
-    `<button class="task-owner ${person.toLowerCase()}" data-reassign="${safe(t.id)}" data-date="${k}" aria-label="Responsable: ${safe(person)}. Cambiar solo este día">${avatar(person)}<span class="owner-name">${safe(person)}</span>${icon('down','xs')}</button></div>`;
+    `<button class="task-owner ${person.toLowerCase()}${movedKeys.has(key)?' moved':''}" data-reassign="${safe(t.id)}" data-date="${k}" aria-label="Responsable: ${safe(person)}. Cambiar solo este día">${avatar(person)}<span class="owner-name">${safe(person)}</span>${icon('down','xs')}</button></div>`;
 }
 function shiftDay(n){
   selected=addDays(selected,n);render();
@@ -145,10 +160,11 @@ function renderWeek(){
   $('#calendar-grid').innerHTML=Array.from({length:7},(_,i)=>{
     const d=addDays(start,i),k=iso(d),tasks=tasksFor(d),pct=percentage(tasks,d),doneCount=tasks.filter(t=>completed(t,d)).length;
     const people=['Edu','Minerva'].map(who=>{const mine=tasks.filter(t=>forPerson(t,d,who));return `<span class="cal-person">${avatar(who)}${mine.filter(t=>completed(t,d)).length}/${mine.length}</span>`;}).join('');
+    const w=isWorkday(d)&&state.workdays?.[k],tag=w?`<span class="cal-tag">${icon(w==='casa'?'home':'briefcase')}${w==='casa'?'Edu en casa':'Edu en oficina'}</span>`:'';
     const items=tasks.slice(0,8).map(t=>`<div class="cal-item${completed(t,d)?' done':''}">${safe(t.title)}</div>`).join('')+(tasks.length>8?`<div class="cal-more">+ ${tasks.length-8} tareas más</div>`:'');
     return `<button class="calendar-day${k===todayIso?' is-today':''}" data-calendar-date="${k}" aria-label="${safe(prettyDate(d,{weekday:'long',day:'numeric',month:'long'}))}: ${doneCount} de ${tasks.length} hechas">`+
       `<div class="cal-head"><span class="cal-dow">${DAY[i]}</span><strong class="cal-num">${d.getDate()}</strong></div>`+
-      `<div class="cal-body"><div class="cal-summary"><span>${doneCount} de ${tasks.length} hechas</span><b>${pct}%</b></div><div class="cal-progress"><i style="width:${pct}%"></i></div><div class="cal-people">${people}</div><div class="cal-items">${items}</div></div>`+
+      `<div class="cal-body"><div class="cal-summary"><span>${doneCount} de ${tasks.length} hechas</span><b>${pct}%</b></div><div class="cal-progress"><i style="width:${pct}%"></i></div><div class="cal-people">${people}${tag}</div><div class="cal-items">${items}</div></div>`+
       `${icon('right','cal-chevron')}</button>`;
   }).join('');
 }
@@ -239,6 +255,27 @@ async function saveTask(){
   $('#task-dialog').close();
   await write(id?`/api/task/${encodeURIComponent(id)}`:'/api/task',id?'PUT':'POST',body,id?'Tarea actualizada':'Tarea creada');
 }
+function openWorkday(){
+  if(!isWorkday(selected))return;
+  const d=selected,place=placeOf(d),habitual=habitualPlace(d);workdayDate=iso(d);
+  $('#workday-date').textContent=capitalize(prettyDate(d,{weekday:'long',day:'numeric',month:'long'}));
+  for(const p of ['casa','oficina'])$('#hint-'+p).textContent=p===habitual?`Lo habitual los ${WEEKDAY[dow(d)].toLowerCase()}`:'Cambio puntual, solo este día';
+  $$('#workday-dialog [data-place]').forEach(b=>{const on=b.dataset.place===place;b.classList.toggle('current',on);b.setAttribute('aria-pressed',on);});
+  $('#workday-dialog').showModal();
+}
+function setWorkday(place){
+  const date=workdayDate;workdayDate=null;$('#workday-dialog').close();
+  if(!date)return;const d=fromIso(date);if(place===placeOf(d))return;
+  // Se calcula qué tareas cambian de responsable para avisarlo y resaltarlas.
+  const saved=state.workdays||{},next={...saved};if(place===habitualPlace(d))delete next[date];else next[date]=place;
+  const daily=state.tasks.filter(t=>t.plan&&occurs(t,d)),before=daily.map(t=>assigned(t,d));
+  state.workdays=next;const moved=daily.filter((t,i)=>assigned(t,d)!==before[i]);state.workdays=saved;
+  const day=prettyDate(d,{weekday:'long'}),label=place===habitualPlace(d)?`Vuelve lo habitual el ${day}`:`${place==='casa'?'Edu teletrabaja':'Edu va a la oficina'} el ${day}`;
+  const msg=`${label} · ${moved.length?`${moved.length} ${moved.length===1?'tarea reasignada':'tareas reasignadas'}`:'sin cambios en el reparto'}`;
+  movedKeys=new Set(moved.map(t=>`${t.id}@${date}`));
+  write('/api/workday','POST',{date,place},msg,()=>{state.workdays=next;});
+  movedKeys=new Set();
+}
 function openAssign(t,dateIso){
   const d=fromIso(dateIso),current=assigned(t,d);
   assignContext={id:t.id,date:dateIso};
@@ -310,13 +347,16 @@ function attach(){
     const c=assignContext,who=b.dataset.assign;assignContext=null;$('#assign-dialog').close();
     write('/api/override','POST',{taskId:c.id,date:c.date,assignee:who},`Ahora se encarga ${who==='Ambos'?'los dos':who}`,()=>{state.overrides[`${c.id}@${c.date}`]=who;});
   });
-  enableSheet($('#task-dialog'));enableSheet($('#assign-dialog'));
+  $('#workday-chip').addEventListener('click',openWorkday);
+  $('#workday-close').addEventListener('click',()=>$('#workday-dialog').close());
+  $('#workday-dialog').addEventListener('click',e=>{const b=e.target.closest('[data-place]');if(b)setWorkday(b.dataset.place);});
+  enableSheet($('#task-dialog'));enableSheet($('#assign-dialog'));enableSheet($('#workday-dialog'));
   $('#mode-select').addEventListener('change',e=>{const mode=e.target.value;write('/api/settings','PUT',{mode},'Horario actualizado',()=>{state.settings.mode=mode;});});
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState!=='visible')return;
     const now=iso(new Date());if(now!==lastToday){if(iso(selected)===lastToday)selected=fromIso(now);lastToday=now;}
     if(appVisible())refresh().catch(()=>sync(false));
   });
-  setInterval(()=>{if(document.visibilityState==='visible'&&appVisible()&&pending===0&&!$('#task-dialog').open&&!$('#assign-dialog').open)refresh().catch(()=>sync(false));},12000);
+  setInterval(()=>{if(document.visibilityState==='visible'&&appVisible()&&pending===0&&!$$('dialog').some(x=>x.open))refresh().catch(()=>sync(false));},12000);
 }
 attach();init();

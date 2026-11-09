@@ -13,7 +13,7 @@
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="stylesheet" href="/style.css?v=5">
+<link rel="stylesheet" href="/style.css?v=6">
 <title>En Casa · Edu &amp; Minerva</title>
 </head><body>
 <svg class="sprite" aria-hidden="true" focusable="false"><defs>
@@ -29,12 +29,14 @@
  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l.9 11.6a2 2 0 0 0 2 1.9h5.2a2 2 0 0 0 2-1.9L17.5 7M9.5 7V4.5h5V7"/></symbol>
  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7.5 4 4 7.5 7.5 11M4 7.5h13M16.5 13l3.5 3.5-3.5 3.5M20 16.5H7"/></symbol>
+ <symbol id="i-briefcase" viewBox="0 0 24 24"><rect x="3.5" y="7.5" width="17" height="12" rx="2.5"/><path d="M9 7.5v-2A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5v2M3.5 12.5h17"/></symbol>
+ <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></symbol>
 </defs></svg>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <div id="auth" class="auth-screen" hidden>
-  <div class="auth-pattern" aria-hidden="true"><span>✿</span><span>⌂</span><span>✳</span></div>
+  <div class="auth-pattern" aria-hidden="true"><span>✿</span><span>⌂</span><span><svg class="deco"><use href="#i-spark"/></svg></span></div>
   <section class="auth-card">
     <img class="brand-img large" src="/icon.svg" alt="" width="64" height="64">
     <p class="eyebrow">Nuestro pequeño rincón</p>
@@ -58,7 +60,7 @@
 
 <div id="app" class="app-shell" data-view="hoy" hidden>
  <aside class="sidebar">
-  <div class="side-logo"><img class="brand-img" src="/icon.svg" alt="" width="44" height="44"><div class="logo-lines"><strong>en casa<span class="flower">✳</span></strong><small>EDU &amp; MINERVA</small></div></div>
+  <div class="side-logo"><img class="brand-img" src="/icon.svg" alt="" width="44" height="44"><div class="logo-lines"><strong>en casa<svg class="flower" aria-hidden="true"><use href="#i-spark"/></svg></strong><small>EDU &amp; MINERVA</small></div></div>
   <p class="nav-caption">Nuestro espacio</p>
   <nav id="nav" aria-label="Navegación">
    <button class="nav-link active" data-view="hoy"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg>Mi día</button>
@@ -85,6 +87,7 @@
   <div class="content">
    <div class="view" id="view-hoy">
     <section class="hero">
+     <svg class="hero-deco" aria-hidden="true"><use href="#i-spark"/></svg>
      <div class="hero-copy">
       <p class="hero-eyebrow" id="hero-eyebrow">Hola</p>
       <h1 id="greeting">Qué bien estar <em>en casa.</em></h1>
@@ -95,7 +98,7 @@
     </section>
 
     <section class="day-head">
-     <div><p class="eyebrow day-eyebrow" id="day-eyebrow">Hoy</p><h2 id="today-title"></h2></div>
+     <div><p class="eyebrow day-eyebrow" id="day-eyebrow">Hoy</p><h2 id="today-title"></h2><button class="workday-chip" id="workday-chip" hidden></button></div>
      <div class="day-nav"><button id="prev-day" class="icon-only" aria-label="Día anterior"><svg class="ico" aria-hidden="true"><use href="#i-left"/></svg></button><button id="today-day">Hoy</button><button id="next-day" class="icon-only" aria-label="Día siguiente"><svg class="ico" aria-hidden="true"><use href="#i-right"/></svg></button></div>
     </section>
     <div class="week-strip" id="week-strip"></div>
@@ -108,7 +111,7 @@
      </div>
      <aside class="insights">
       <section class="panel people-panel"><p class="tiny-eyebrow">Trabajo en equipo</p><h3>Así va la semana</h3><div id="people-progress"></div></section>
-      <section class="side-notice"><span aria-hidden="true">✳</span><p><b>Sin sobrecargarse.</b> En prácticas priorizad lo imprescindible; las limpiezas grandes pueden esperar al fin de semana.</p></section>
+      <section class="side-notice"><svg class="ico sm" aria-hidden="true"><use href="#i-spark"/></svg><p><b>Sin sobrecargarse.</b> En prácticas priorizad lo imprescindible; las limpiezas grandes pueden esperar al fin de semana.</p></section>
      </aside>
     </div>
    </div>
@@ -139,7 +142,7 @@
      <section class="panel activity-panel"><h3>Actividad reciente</h3><div id="activity-list"></div></section>
      <div class="activity-side">
       <section class="panel profile-panel"><div class="profile-row"><span class="avatar edu" id="more-avatar">E</span><div><strong id="more-name">Edu</strong><small>Sesión iniciada en este dispositivo</small></div></div><button class="soft-btn full-btn" id="more-logout"><svg class="ico sm" aria-hidden="true"><use href="#i-swap"/></svg>Cambiar de perfil</button></section>
-      <section class="panel"><h3>Cómo nos organizamos</h3><p>Elegid el horario de Minerva de esta semana. Cambiarlo ajusta los responsables de las tareas diarias sin borrar lo ya completado.</p><label for="mode-select">Horario actual</label><select id="mode-select"><option value="practicas">Prácticas (L–J 16:00–20:00)</option><option value="manana">Turno de mañana</option><option value="tarde">Turno de tarde (13:20–20:15)</option></select><p class="small-note">Edu trabaja presencialmente lunes, miércoles y jueves, y teletrabaja martes y viernes. Las tareas de quitar polvo están reservadas a Minerva.</p></section>
+      <section class="panel"><h3>Cómo nos organizamos</h3><p>Elegid el horario de Minerva de esta semana. Cambiarlo ajusta los responsables de las tareas diarias sin borrar lo ya completado.</p><label for="mode-select">Horario actual</label><select id="mode-select"><option value="practicas">Prácticas (L–J 16:00–20:00)</option><option value="manana">Turno de mañana</option><option value="tarde">Turno de tarde (13:20–20:15)</option></select><p class="small-note">Edu trabaja presencialmente lunes, miércoles y jueves, y teletrabaja martes y viernes. Si algún día cambia, tocad «Edu en casa / en la oficina» bajo la fecha en Hoy: solo afecta a ese día. Las tareas de quitar polvo están reservadas a Minerva.</p></section>
      </div>
     </div>
    </div>
@@ -187,5 +190,15 @@
   <p class="small-note">El cambio solo se aplica a este día; el reparto habitual no se modifica.</p>
  </div>
 </dialog>
-<script type="module" src="/app.js?v=5"></script>
+<dialog id="workday-dialog" class="task-dialog small-dialog" aria-labelledby="workday-title">
+ <div class="sheet">
+  <div class="dialog-head"><div><p class="eyebrow" id="workday-date">Solo este día</p><h2 id="workday-title">¿Dónde trabaja Edu?</h2></div><button type="button" class="close-dialog" id="workday-close" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+  <div class="assign-buttons workday-options">
+   <button data-place="casa"><span class="place-ico casa"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg></span><span class="opt-copy"><b>Teletrabaja</b><small id="hint-casa"></small></span><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg></button>
+   <button data-place="oficina"><span class="place-ico"><svg class="ico" aria-hidden="true"><use href="#i-briefcase"/></svg></span><span class="opt-copy"><b>Va a la oficina</b><small id="hint-oficina"></small></span><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg></button>
+  </div>
+  <p class="small-note">Solo cambia este día. Las tareas diarias se reparten como en un día normal de teletrabajo (martes) o de oficina (lunes); lo que hayáis reasignado a mano se mantiene.</p>
+ </div>
+</dialog>
+<script type="module" src="/app.js?v=6"></script>
 </body></html>

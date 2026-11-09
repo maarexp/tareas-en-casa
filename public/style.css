@@ -85,7 +85,7 @@ h3{font-size:17px;font-weight:700;letter-spacing:-.01em}
 
 /* ---------- Hoy: cabecera ---------- */
 .hero{position:relative;display:flex;align-items:center;gap:14px;padding:18px 16px 18px 20px;border-radius:var(--r-xl);color:#fff;background:radial-gradient(120% 140% at 100% 0%,rgb(255 255 255/.13),transparent 55%),linear-gradient(150deg,#587356 0%,#435942 100%);box-shadow:0 12px 28px rgb(67 89 66/.24);overflow:hidden;isolation:isolate}
-.hero::after{content:'✳';position:absolute;left:-34px;bottom:-78px;z-index:-1;font-size:170px;line-height:1;color:rgb(255 255 255/.05);pointer-events:none}
+.hero-deco{position:absolute;left:-30px;bottom:-78px;z-index:-1;width:150px;height:150px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;opacity:.07;pointer-events:none}
 .hero-copy{flex:1;min-width:0}
 .hero-eyebrow{margin-bottom:5px;font-size:14px;font-weight:600;color:#eef3ec}
 .hero h1{margin:0 0 7px;font-size:25px;line-height:1.12;font-weight:500}
@@ -104,6 +104,15 @@ h3{font-size:17px;font-weight:700;letter-spacing:-.01em}
 .day-head>div:first-child{min-width:0}
 .day-eyebrow{margin-bottom:3px;color:var(--accent-dark)}
 .day-head h2{font-size:21px;line-height:1.15}
+/* Dónde trabaja Edu ese día (teletrabajo / oficina) */
+.workday-chip{position:relative;display:inline-flex;align-items:center;gap:7px;min-height:36px;margin-top:10px;padding:0 10px 0 9px;border:1px solid var(--line);border-radius:99px;background:var(--surface);color:var(--ink-2);font-size:14px;font-weight:600;transition:transform .15s var(--ease),background-color .15s}
+.workday-chip::after{content:'';position:absolute;inset:-5px -4px}
+.workday-chip .ico{width:18px;height:18px}
+.workday-chip .ico.xs{width:14px;height:14px;color:var(--muted)}
+.workday-chip.casa{border-color:#cfdcca;background:var(--sage-tint);color:var(--sage-dark)}
+.workday-chip.changed{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.workday-chip .tag{padding:2px 7px;border-radius:99px;background:var(--accent-soft);color:var(--accent-dark);font-size:11.5px;font-weight:700;letter-spacing:.02em}
+.workday-chip:active{transform:scale(.96)}
 .day-nav,.week-controls{display:flex;align-items:center;gap:6px}
 .day-nav button,.week-controls button{display:inline-grid;place-items:center;min-width:44px;height:44px;padding:0 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--ink-2);font-size:15px;font-weight:600;transition:background-color .15s,transform .12s var(--ease)}
 .day-nav button.icon-only,.week-controls button.icon-only{padding:0}
@@ -156,6 +165,8 @@ h3{font-size:17px;font-weight:700;letter-spacing:-.01em}
 .task-owner{display:inline-flex;align-items:center;gap:3px;flex:none;min-height:44px;margin-right:8px;padding:4px 6px 4px 4px;border:0;border-radius:var(--r);background:transparent;color:var(--faint);transition:background-color .15s}
 .task-owner:active{background:var(--surface-2)}
 .task-owner .avatar{width:30px;height:30px;border-radius:10px;font-size:13px}
+.task-owner.moved .avatar{animation:moved .9s var(--ease)}
+@keyframes moved{0%{transform:scale(.6) rotate(-12deg);box-shadow:0 0 0 0 rgb(169 95 76/.45)}45%{transform:scale(1.18)}100%{transform:none;box-shadow:0 0 0 10px rgb(169 95 76/0)}}
 .owner-name{display:none;font-size:14px;font-weight:600}
 .task-owner.edu .owner-name{color:var(--edu)}
 .task-owner.minerva .owner-name{color:var(--minerva)}
@@ -181,7 +192,7 @@ h3{font-size:17px;font-weight:700;letter-spacing:-.01em}
 .bar-fill{height:100%;border-radius:inherit;background:var(--sage);transition:width .7s var(--ease)}
 .bar-fill.minerva{background:#c98a78}
 .side-notice{display:flex;gap:12px;padding:16px 18px;border-radius:var(--r-lg);background:var(--accent-soft);color:#7a4739;font-size:14px;line-height:1.5}
-.side-notice span{font-size:18px;line-height:1.3}
+.side-notice .ico{margin-top:2px}
 
 /* ---------- Cabeceras de página ---------- */
 .page-head{padding:10px 2px 18px}
@@ -212,6 +223,9 @@ h3{font-size:17px;font-weight:700;letter-spacing:-.01em}
 .cal-people{display:flex;gap:16px;margin-top:9px}
 .cal-person{display:inline-flex;align-items:center;gap:6px;font:600 13px var(--round);color:var(--muted)}
 .cal-person .avatar{width:22px;height:22px;border-radius:7px;font-size:11px}
+.cal-people{flex-wrap:wrap;align-items:center;row-gap:6px}
+.cal-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 6px;border-radius:99px;background:var(--accent-soft);color:var(--accent-dark);font-size:12px;font-weight:700}
+.cal-tag .ico{width:13px;height:13px;stroke-width:2.4}
 .cal-items{display:none}
 .cal-chevron{width:18px;height:18px;color:var(--faint)}
 .cal-item{display:flex;align-items:flex-start;gap:7px;padding:3px 0;font-size:12.5px;line-height:1.3;color:var(--ink-2)}
@@ -298,6 +312,12 @@ input::-webkit-date-and-time-value{text-align:left}
 .assign-buttons button:active{background:var(--surface-2)}
 .assign-buttons button.current{border-color:var(--sage);background:var(--sage-tint)}
 .assign-buttons button.current .ico{opacity:1}
+.workday-options button{min-height:66px}
+.place-ico{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:12px;background:var(--surface-2);color:var(--ink-2)}
+.place-ico.casa{background:var(--sage-soft);color:var(--sage-dark)}
+.assign-buttons .place-ico .ico{opacity:1;color:inherit}
+.opt-copy{display:flex;flex-direction:column;gap:2px}
+.opt-copy small{font-size:13.5px;font-weight:500;color:var(--muted)}
 
 /* ---------- Botón flotante y barra inferior ---------- */
 .fab{position:fixed;right:calc(18px + var(--safe-r));bottom:calc(var(--nav-h) + var(--safe-b) + 18px);z-index:25;display:grid;place-items:center;width:58px;height:58px;border:0;border-radius:20px;background:var(--accent);color:#fff;box-shadow:0 10px 24px rgb(147 79 62/.34),0 2px 6px rgb(147 79 62/.22);transition:transform .15s var(--ease),background-color .15s}
@@ -323,6 +343,7 @@ input::-webkit-date-and-time-value{text-align:left}
 .auth-pattern span:nth-child(1){left:-50px;top:10px}
 .auth-pattern span:nth-child(2){right:4%;top:12%}
 .auth-pattern span:nth-child(3){left:14%;bottom:-40px}
+.auth-pattern .deco{display:block;width:150px;height:150px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
 .auth-card{position:relative;width:min(440px,100%);padding:30px 22px 22px;border-radius:28px;background:var(--surface);box-shadow:0 20px 60px rgb(58 87 67/.14);text-align:center;animation:view-in .4s var(--ease)}
 .brand-img.large{width:64px;height:64px;margin:0 auto 16px;border-radius:18px;box-shadow:0 8px 20px rgb(74 96 73/.25)}
 .auth-card h1{margin:10px 0 12px;font-size:36px;line-height:1.08;font-weight:500}
@@ -388,7 +409,7 @@ input::-webkit-date-and-time-value{text-align:left}
   .side-logo{display:flex;align-items:center;gap:12px;padding:4px 10px 32px}
   .side-logo .brand-img{width:44px;height:44px;border-radius:13px}
   .logo-lines strong{display:block;font:600 23px/1.1 var(--serif);letter-spacing:-.02em}
-  .flower{margin-left:3px;font-family:Arial,sans-serif;font-size:15px;color:var(--accent)}
+  .flower{width:13px;height:13px;margin-left:4px;vertical-align:4px;fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round}
   .logo-lines small{font-size:10px;font-weight:700;letter-spacing:.18em;color:var(--muted)}
   .nav-caption{margin:0 14px 12px}
   #nav{display:grid;gap:4px}
@@ -418,7 +439,7 @@ input::-webkit-date-and-time-value{text-align:left}
   .footer span{color:var(--accent)}
   .desktop-only{display:inline-flex!important}
   .hero{min-height:210px;padding:34px 40px}
-  .hero::after{font-size:240px;right:180px;bottom:-90px}
+  .hero-deco{width:210px;height:210px;bottom:-80px}
   .hero-eyebrow{font-size:15px}
   .hero h1{font-size:40px;margin-bottom:10px}
   .hero-sub{font-size:15.5px}

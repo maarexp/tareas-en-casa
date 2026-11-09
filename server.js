@@ -15,6 +15,8 @@ const secret=process.env.APP_SECRET||crypto.randomBytes(32).toString('hex');
 if(!process.env.APP_SECRET) console.warn('APP_SECRET no configurado: las sesiones se invalidarán tras reiniciar.');
 if(!dbUrl && process.env.REQUIRE_POSTGRES==='1') throw new Error('Falta DATABASE_URL: este despliegue requiere PostgreSQL para guardar los datos.');
 if(!dbUrl && process.env.PERSISTENT_STORAGE!=='1') console.warn('Modo local no persistente: usa PERSISTENT_STORAGE=1 con un volumen real o configura DATABASE_URL.');
+// Edu teletrabaja martes y viernes (lunes=0). Los cambios puntuales se guardan por fecha en state.workdays.
+const TELEWORK_DAYS=[1,4];
 let pgPool=null;
 let fileQueue=Promise.resolve();
 if(dbUrl){
@@ -44,9 +46,11 @@ function cookie(req){const raw=req.headers.cookie||'';const match=raw.match(/(?:
 function createCookie(req,actor){const payload=b64(JSON.stringify({actor,exp:Date.now()+30*86400_000}));const secure=(req.headers['x-forwarded-proto']||'').split(',')[0]==='https'||!!req.socket.encrypted;return `hogar_session=${payload}.${hmac(payload)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=2592000${secure?'; Secure':''}`;}
 function json(res,status,data,headers={}){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...headers});res.end(JSON.stringify(data));}
 function validDate(s){if(!/^\d{4}-\d\d-\d\d$/.test(s||''))return false;const d=new Date(`${s}T12:00:00Z`);return !Number.isNaN(d.getTime())&&d.toISOString().slice(0,10)===s;}
+function nearDate(s){const v=new Date(s+'T12:00:00Z').getTime(),now=Date.now();return v>=now-400*86400_000&&v<=now+400*86400_000;}
+const longDate=s=>new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(s+'T12:00:00Z')).replace(',','');
 function checkOrigin(req){if(['GET','HEAD','OPTIONS'].includes(req.method))return; if(req.headers['x-hogar-client']!=='1')throw httpError(403,'Solicitud no autorizada');const origin=req.headers.origin;if(origin){const o=new URL(origin);const forwarded=req.headers['x-forwarded-host']?.split(',')[0]?.trim();const host=forwarded||req.headers.host;if(o.host!==host)throw httpError(403,'Origen no permitido');}}
 function needLogin(req){const sess=cookie(req);if(!sess)throw httpError(401,'Introduce el código de la casa');return sess;}
-function publicState(s,actor){return {actor,settings:s.settings,tasks:s.tasks,completions:s.completions,overrides:s.overrides,activity:s.activity.slice(-65)};}
+function publicState(s,actor){return {actor,settings:s.settings,tasks:s.tasks,completions:s.completions,overrides:s.overrides,workdays:s.workdays||{},teleworkDays:TELEWORK_DAYS,activity:s.activity.slice(-65)};}
 function logActivity(s,actor,message){s.activity.push({id:crypto.randomUUID(),actor,message,at:new Date().toISOString()});if(s.activity.length>200)s.activity=s.activity.slice(-200);}
 const categories=['Orden','Cocina','Gatos','Suelos','Baños','Ropa','Limpieza profunda','Exterior','Otros'];
 function validateTask(t){
@@ -103,12 +107,25 @@ const server=http.createServer(async(req,res)=>{
       if(p==='/api/toggle'&&req.method==='POST'){
         const {taskId,date,done}=await parseBody(req);
         if(typeof taskId!=='string'||!validDate(date)||typeof done!=='boolean')throw httpError(400,'Datos inválidos');
-        const now=Date.now(),value=new Date(date+'T12:00:00Z').getTime();if(value<now-400*86400_000||value>now+400*86400_000)throw httpError(400,'Fecha fuera de rango');
+        if(!nearDate(date))throw httpError(400,'Fecha fuera de rango');
         const s=await mutate(s=>{const t=s.tasks.find(t=>t.id===taskId);if(!t)throw httpError(404,'Tarea desconocida');const key=`${taskId}@${date}`;if(done)s.completions[key]={by:actor,at:new Date().toISOString()};else delete s.completions[key];logActivity(s,actor,`${done?'Completó':'Desmarcó'}: ${t.title}`);return s;});return json(res,200,publicState(s,actor));
       }
       if(p==='/api/override'&&req.method==='POST'){
         const {taskId,date,assignee}=await parseBody(req);if(!validDate(date)||!['Edu','Minerva','Ambos'].includes(assignee))throw httpError(400,'Reasignación incorrecta');
         const s=await mutate(s=>{const t=s.tasks.find(t=>t.id===taskId);if(!t)throw httpError(404,'Tarea desconocida');s.overrides[`${taskId}@${date}`]=assignee;logActivity(s,actor,`Reasignó ${t.title} a ${assignee}`);return s;});return json(res,200,publicState(s,actor));
+      }
+      if(p==='/api/workday'&&req.method==='POST'){
+        // Cambio puntual del lugar de trabajo de Edu: 'casa' (teletrabajo), 'oficina' o null para volver a lo habitual.
+        const {date,place=null}=await parseBody(req);
+        if(!validDate(date)||!nearDate(date)||![null,'casa','oficina'].includes(place))throw httpError(400,'Día de trabajo incorrecto');
+        const weekday=(new Date(date+'T12:00:00Z').getUTCDay()+6)%7;if(weekday>4)throw httpError(400,'Solo se puede cambiar de lunes a viernes');
+        const habitual=TELEWORK_DAYS.includes(weekday)?'casa':'oficina',next=place===habitual?null:place;
+        const s=await mutate(s=>{
+          s.workdays||={};const before=s.workdays[date]||null;if(before===next)return s;
+          if(next)s.workdays[date]=next;else delete s.workdays[date];
+          const cutoff=new Date(Date.now()-60*86400_000).toISOString().slice(0,10);for(const k of Object.keys(s.workdays))if(k<cutoff)delete s.workdays[k];
+          logActivity(s,actor,next==='casa'?`Edu teletrabaja el ${longDate(date)}`:next==='oficina'?`Edu va a la oficina el ${longDate(date)}`:`Edu vuelve a su horario habitual el ${longDate(date)}`);return s;
+        });return json(res,200,publicState(s,actor));
       }
       if(p==='/api/task'&&req.method==='POST'){
         const parsed=validateTask(await parseBody(req));

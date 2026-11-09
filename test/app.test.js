@@ -5,12 +5,13 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
+import {fileURLToPath} from 'node:url';
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 async function freePort(){return new Promise((resolve,reject)=>{const s=net.createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>resolve(p));});s.on('error',reject);});}
 async function request(base,path,method='GET',body,cookie){return fetch(base+path,{method,headers:{...(body?{'content-type':'application/json'}:{}),...(method!=='GET'?{'x-hogar-client':'1'}:{}),...(cookie?{cookie}:{})},body:body?JSON.stringify(body):undefined});}
 test('flujo compartido: crear casa, entrar, marcar, reasignar, añadir y cambiar horario',async t=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'hogar-test-'));const port=await freePort();
- const proc=spawn(process.execPath,['server.js'],{cwd:new URL('..',import.meta.url).pathname,env:{...process.env,DATA_FILE:path.join(dir,'data.json'),PORT:String(port),APP_SECRET:'test-very-long-secret-just-for-tests-1234567'},stdio:'ignore'});
+ const proc=spawn(process.execPath,['server.js'],{cwd:fileURLToPath(new URL('..',import.meta.url)),env:{...process.env,DATA_FILE:path.join(dir,'data.json'),PORT:String(port),APP_SECRET:'test-very-long-secret-just-for-tests-1234567'},stdio:'ignore'});
  t.after(async()=>{proc.kill();await fs.rm(dir,{recursive:true,force:true});});
  const base=`http://127.0.0.1:${port}`;
  let ready=false;for(let n=0;n<50;n++){try{const r=await request(base,'/api/health');if(r.ok){ready=true;break;}}catch{}await pause(80);}assert.ok(ready,'servidor iniciado');
@@ -25,6 +26,17 @@ test('flujo compartido: crear casa, entrar, marcar, reasignar, añadir y cambiar
  r=await request(base,'/api/override','POST',{taskId:'cama',date:'2026-11-09',assignee:'Edu'},cookMinerva);assert.equal(r.status,200);
  r=await request(base,'/api/task','POST',{title:'Regar plantas',category:'Otros',frequency:'weekly',assignee:'Minerva',weekday:3,minutes:5},cookEdu);assert.equal(r.status,201);state=await r.json();assert.ok(state.tasks.some(t=>t.title==='Regar plantas'));
  r=await request(base,'/api/settings','PUT',{mode:'tarde'},cookMinerva);assert.equal(r.status,200);state=await r.json();assert.equal(state.settings.mode,'tarde');assert.equal(state.overrides['cama@2026-11-09'],'Edu');
+ // Cambios puntuales de teletrabajo: miércoles en casa, martes en la oficina, sábado no permitido y vuelta a lo habitual.
+ const near=n=>{const d=new Date();d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
+ const nextDow=dw=>{for(let n=1;n<=7;n++){const s=near(n);if((new Date(s+'T12:00:00Z').getUTCDay()+6)%7===dw)return s;}};
+ const wed=nextDow(2),tue=nextDow(1),sat=nextDow(5);
+ r=await request(base,'/api/workday','POST',{date:wed,place:'casa'},cookMinerva);assert.equal(r.status,200);state=await r.json();assert.equal(state.workdays[wed],'casa');assert.deepEqual(state.teleworkDays,[1,4]);
+ r=await request(base,'/api/workday','POST',{date:tue,place:'oficina'},cookEdu);state=await r.json();assert.equal(state.workdays[tue],'oficina');
+ r=await request(base,'/api/workday','POST',{date:tue,place:'casa'},cookEdu);state=await r.json();assert.equal(state.workdays[tue],undefined,'lo habitual no se guarda como excepción');
+ r=await request(base,'/api/workday','POST',{date:wed,place:null},cookEdu);state=await r.json();assert.equal(state.workdays[wed],undefined);
+ r=await request(base,'/api/workday','POST',{date:sat,place:'casa'},cookEdu);assert.equal(r.status,400);
+ r=await request(base,'/api/workday','POST',{date:wed,place:'playa'},cookEdu);assert.equal(r.status,400);
+ assert.ok(state.activity.some(a=>a.message.startsWith('Edu teletrabaja el ')));
  r=await request(base,'/api/setup','POST',{pin:'alguien-segundo',actor:'Edu'});assert.equal(r.status,409);
  r=await request(base,'/api/task','POST',{title:'Sin login',frequency:'daily',assignee:'Edu'},undefined);assert.equal(r.status,401);
 });

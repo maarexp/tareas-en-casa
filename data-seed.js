@@ -90,6 +90,7 @@ export const createInitialState = ({salt,pinHash})=>({
   tasks:seedTasks,
   completions:{},
   overrides:{},
+  workdays:{},
   activity:[],
   createdAt:new Date().toISOString()
 });
