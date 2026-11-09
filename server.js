@@ -116,8 +116,9 @@ const server=http.createServer(async(req,res)=>{
       }
       const match=p.match(/^\/api\/task\/([\w-]+)$/);
       if(match&&(req.method==='PUT'||req.method==='DELETE')){
-        const parsed=req.method==='PUT'?validateTask(await parseBody(req)):null;
-        const s=await mutate(s=>{const idx=s.tasks.findIndex(t=>t.id===match[1]);if(idx<0)throw httpError(404,'Tarea no encontrada');const old=s.tasks[idx];if(parsed)s.tasks[idx]={...parsed,id:old.id};else s.tasks.splice(idx,1);logActivity(s,actor,`${parsed?'Editó':'Eliminó'}: ${old.title}`);return s;});return json(res,200,publicState(s,actor));
+        const raw=req.method==='PUT'?await parseBody(req):null;const parsed=raw?validateTask(raw):null;
+        // Al editar se conservan el emoji y, si se pide, el reparto automático según horario (plan).
+        const s=await mutate(s=>{const idx=s.tasks.findIndex(t=>t.id===match[1]);if(idx<0)throw httpError(404,'Tarea no encontrada');const old=s.tasks[idx];if(parsed)s.tasks[idx]={...parsed,id:old.id,emoji:old.emoji||parsed.emoji,...(old.plan&&raw.keepPlan===true?{plan:old.plan}:{})};else s.tasks.splice(idx,1);logActivity(s,actor,`${parsed?'Editó':'Eliminó'}: ${old.title}`);return s;});return json(res,200,publicState(s,actor));
       }
       throw httpError(404,'Ruta no encontrada');
     }

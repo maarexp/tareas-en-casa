@@ -1,49 +1,191 @@
 <!doctype html>
 <html lang="es"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#faf6f0"><meta name="description" content="El calendario compartido de Edu y Minerva: tareas, gatos, cocina y una casa en orden.">
-<link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="manifest" href="/manifest.webmanifest"><link rel="stylesheet" href="/style.css"><title>En Casa · Edu & Minerva</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f4ee">
+<meta name="color-scheme" content="light">
+<meta name="description" content="El calendario compartido de Edu y Minerva: tareas, gatos, cocina y una casa en orden.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="En Casa">
+<meta name="format-detection" content="telephone=no">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/style.css?v=5">
+<title>En Casa · Edu &amp; Minerva</title>
 </head><body>
+<svg class="sprite" aria-hidden="true" focusable="false"><defs>
+ <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9v10.5a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1V9"/></symbol>
+ <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+ <symbol id="i-list" viewBox="0 0 24 24"><path d="M10 6.5h10M10 12h10M10 17.5h10"/><path d="m3.5 6.5 1.5 1.5 2.5-3M3.5 12l1.5 1.5 2.5-3M3.5 17.5 5 19l2.5-3"/></symbol>
+ <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+ <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+ <symbol id="i-left" viewBox="0 0 24 24"><path d="m14.5 5.5-6.5 6.5 6.5 6.5"/></symbol>
+ <symbol id="i-right" viewBox="0 0 24 24"><path d="m9.5 5.5 6.5 6.5-6.5 6.5"/></symbol>
+ <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9.5 6 6 6-6"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+ <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l.9 11.6a2 2 0 0 0 2 1.9h5.2a2 2 0 0 0 2-1.9L17.5 7M9.5 7V4.5h5V7"/></symbol>
+ <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7.5 4 4 7.5 7.5 11M4 7.5h13M16.5 13l3.5 3.5-3.5 3.5M20 16.5H7"/></symbol>
+</defs></svg>
+
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
 <div id="auth" class="auth-screen" hidden>
-  <div class="auth-pattern"><span>✿</span><span>⌂</span><span>✳</span></div>
+  <div class="auth-pattern" aria-hidden="true"><span>✿</span><span>⌂</span><span>✳</span></div>
   <section class="auth-card">
-    <div class="brand-mark large">⌂</div><div class="eyebrow">NUESTRO PEQUEÑO RINCÓN</div>
-    <h1>Una casa,<br><em>dos personas.</em></h1><p class="auth-sub">Todas las tareas, los gatos y la vida en común. Sin discusiones por quién hizo qué.</p>
-    <form id="auth-form"><div class="auth-mode" id="auth-title">Entrar en casa</div>
-      <label>¿Quién eres?</label><div class="person-picker" id="actor-picker"><button type="button" data-actor="Edu" class="selected"><span class="avatar edu">E</span>Edu</button><button type="button" data-actor="Minerva"><span class="avatar minerva">M</span>Minerva</button></div>
-      <label for="access-code" id="pin-label">Código de acceso compartido</label><input type="password" id="access-code" minlength="8" maxlength="72" autocomplete="current-password" required placeholder="Mínimo 8 caracteres">
+    <img class="brand-img large" src="/icon.svg" alt="" width="64" height="64">
+    <p class="eyebrow">Nuestro pequeño rincón</p>
+    <h1>Una casa,<br><em>dos personas.</em></h1>
+    <p class="auth-sub">Todas las tareas, los gatos y la vida en común. Sin discusiones por quién hizo qué.</p>
+    <form id="auth-form">
+      <div class="auth-mode" id="auth-title">Entrar en casa</div>
+      <span class="field-label" id="actor-label">¿Quién eres?</span>
+      <div class="person-picker" id="actor-picker" role="group" aria-labelledby="actor-label">
+        <button type="button" data-actor="Edu" class="selected" aria-pressed="true"><span class="avatar edu">E</span>Edu</button>
+        <button type="button" data-actor="Minerva" aria-pressed="false"><span class="avatar minerva">M</span>Minerva</button>
+      </div>
+      <label for="access-code" id="pin-label">Código de acceso compartido</label>
+      <input type="password" id="access-code" minlength="8" maxlength="72" autocomplete="current-password" required placeholder="Mínimo 8 caracteres">
       <p id="setup-explanation" class="small-note" hidden>La primera persona crea el código de la casa. Después compartidlo en privado para entrar desde ambos móviles.</p>
-      <button class="primary-btn full" id="auth-submit" type="submit">Entrar <span>↗</span></button><p id="auth-error" class="error" role="alert"></p>
+      <button class="primary-btn full" id="auth-submit" type="submit">Entrar</button>
+      <p id="auth-error" class="error" role="alert"></p>
     </form>
   </section>
 </div>
-<div id="app" class="app-shell" hidden>
+
+<div id="app" class="app-shell" data-view="hoy" hidden>
  <aside class="sidebar">
-  <div class="side-logo"><div class="brand-mark">⌂</div><div class="logo-lines"><strong>en casa<span class="flower">✳</span></strong><small>EDU & MINERVA</small></div></div>
-  <p class="nav-caption">NUESTRO ESPACIO</p>
-  <nav id="nav" aria-label="Navegación"><button class="nav-link active" data-view="hoy"><span>◫</span> Mi día</button><button class="nav-link" data-view="semana"><span>▦</span> Calendario</button><button class="nav-link" data-view="rutinas"><span>☷</span> Todas las tareas</button><button class="nav-link" data-view="actividad"><span>◷</span> Actividad</button></nav>
-  <div class="side-bottom"><div class="tip-card"><div class="tip-glyph">🐱</div><strong>También es su casa</strong><p>Comida, agua y areneros: los pequeños habitantes tienen su rutina.</p></div><button class="side-profile" id="switch-profile"><span class="avatar edu" id="side-avatar">E</span><span><strong id="side-name">Edu</strong><small>Cambiar de perfil</small></span><span class="arrow">↗</span></button></div>
+  <div class="side-logo"><img class="brand-img" src="/icon.svg" alt="" width="44" height="44"><div class="logo-lines"><strong>en casa<span class="flower">✳</span></strong><small>EDU &amp; MINERVA</small></div></div>
+  <p class="nav-caption">Nuestro espacio</p>
+  <nav id="nav" aria-label="Navegación">
+   <button class="nav-link active" data-view="hoy"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg>Mi día</button>
+   <button class="nav-link" data-view="semana"><svg class="ico" aria-hidden="true"><use href="#i-calendar"/></svg>Calendario</button>
+   <button class="nav-link" data-view="rutinas"><svg class="ico" aria-hidden="true"><use href="#i-list"/></svg>Todas las tareas</button>
+   <button class="nav-link" data-view="actividad"><svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg>Actividad</button>
+  </nav>
+  <div class="side-bottom">
+   <div class="tip-card"><div class="tip-glyph" aria-hidden="true">🐱</div><strong>También es su casa</strong><p>Comida, agua y areneros: los pequeños habitantes tienen su rutina.</p></div>
+   <button class="side-profile" id="switch-profile"><span class="avatar edu" id="side-avatar">E</span><span><strong id="side-name">Edu</strong><small>Cambiar de perfil</small></span><svg class="ico sm arrow" aria-hidden="true"><use href="#i-swap"/></svg></button>
+  </div>
  </aside>
+
  <main class="main">
-  <header class="topbar"><div class="mobile-logo">⌂ <strong>en casa</strong></div><div class="breadcrumb">NUESTRO HOGAR <span>/</span> <span id="crumb">Mi día</span></div><div class="top-actions"><span class="sync-state"><i id="sync-indicator"></i><span id="sync-label">Sincronizado</span></span><button class="profile-top" id="top-profile"><span class="avatar edu" id="top-avatar">E</span><span id="top-name">Edu</span><span>⌄</span></button></div></header>
+  <header class="topbar">
+   <div class="mobile-logo"><img class="brand-img" src="/icon.svg" alt="" width="30" height="30"><strong>en casa</strong></div>
+   <div class="breadcrumb">Nuestro hogar <span>/</span> <span id="crumb">Mi día</span></div>
+   <div class="top-actions">
+    <span class="sync-state" id="sync-state"><i id="sync-indicator"></i><span id="sync-label">Sincronizado</span></span>
+    <button class="profile-top" id="top-profile" aria-label="Perfil y ajustes"><span class="avatar edu" id="top-avatar">E</span><span id="top-name">Edu</span><svg class="ico xs" aria-hidden="true"><use href="#i-down"/></svg></button>
+   </div>
+  </header>
+
   <div class="content">
    <div class="view" id="view-hoy">
-    <section class="hero"><div class="hero-copy"><div class="eyebrow white">UNA CASA CON SU PROPIO RITMO <span>✳</span></div><h1 id="greeting">Qué bien estar <em>en casa.</em></h1><p id="hero-sub">Un poquito cada día hace todo más fácil.</p><div class="hero-actions"><button id="new-task-hero">+ Añadir tarea</button><button class="ghost-hero" data-goto="semana">Ver semana ↗</button></div></div><div class="hero-art" aria-hidden="true"><div class="sun">✺</div><div class="window"><div class="curtain"></div><div class="plant">♧</div></div><div class="cat-drawing">=^･ω･^=</div></div></section>
-    <section class="section-title"><div><p class="eyebrow">PASO A PASO</p><h2>Hoy en casa <span class="date-inline" id="today-title"></span></h2></div><div class="day-nav"><button id="prev-day" aria-label="Día anterior">‹</button><button id="today-day">Hoy</button><button id="next-day" aria-label="Día siguiente">›</button></div></section>
+    <section class="hero">
+     <div class="hero-copy">
+      <p class="hero-eyebrow" id="hero-eyebrow">Hola</p>
+      <h1 id="greeting">Qué bien estar <em>en casa.</em></h1>
+      <p class="hero-sub"><b id="progress-copy">¡Vamos a ello!</b> <span id="progress-count">0 de 0 hechas</span></p>
+      <div class="hero-actions"><button id="new-task-hero"><svg class="ico sm" aria-hidden="true"><use href="#i-plus"/></svg>Añadir tarea</button><button class="ghost-hero" data-goto="semana">Ver semana<svg class="ico sm" aria-hidden="true"><use href="#i-right"/></svg></button></div>
+     </div>
+     <div class="progress-wheel" id="progress-wheel" role="img" aria-label="Progreso del día"><div><strong id="progress-percent">0%</strong><small>hecho</small></div></div>
+    </section>
+
+    <section class="day-head">
+     <div><p class="eyebrow day-eyebrow" id="day-eyebrow">Hoy</p><h2 id="today-title"></h2></div>
+     <div class="day-nav"><button id="prev-day" class="icon-only" aria-label="Día anterior"><svg class="ico" aria-hidden="true"><use href="#i-left"/></svg></button><button id="today-day">Hoy</button><button id="next-day" class="icon-only" aria-label="Día siguiente"><svg class="ico" aria-hidden="true"><use href="#i-right"/></svg></button></div>
+    </section>
     <div class="week-strip" id="week-strip"></div>
-    <div class="overview-grid"><div class="panel task-panel"><div class="panel-top"><div><h3>Lo que toca hacer</h3><p>Marca lo que terminéis y se verá en ambos móviles</p></div><button class="small-add" id="new-task-today">＋</button></div><div class="filter-row" id="person-filters"><button class="filter active" data-person="Todos">Todos</button><button class="filter" data-person="Edu">Edu</button><button class="filter" data-person="Minerva">Minerva</button></div><div id="day-tasks"></div></div>
-    <aside class="insights"><section class="panel progress-panel"><div class="tiny-eyebrow">EL PROGRESO DE HOY</div><div class="progress-content"><div class="progress-wheel" id="progress-wheel"><div><strong id="progress-percent">0%</strong><small>hecho</small></div></div><div><strong class="progress-text" id="progress-copy">¡Vamos a ello!</strong><p id="progress-count">0 de 0 completadas</p></div></div><div class="progress-foot"><span>Un día a la vez 🌿</span></div></section><section class="panel people-panel"><div class="tiny-eyebrow">TRABAJO EN EQUIPO</div><h3>Así va la semana</h3><div id="people-progress"></div></section><section class="side-notice"><span>✳</span><p><b>Sin sobrecargarse.</b> En prácticas priorizad lo imprescindible; las limpiezas grandes pueden esperar al fin de semana.</p></section></aside></div>
+
+    <div class="overview-grid">
+     <div class="panel task-panel">
+      <div class="panel-top"><div><h3>Lo que toca hacer</h3><p>Marca lo que terminéis y se verá en ambos móviles</p></div><button class="small-add" id="new-task-today" aria-label="Nueva tarea"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg></button></div>
+      <div class="filter-row" id="person-filters" role="group" aria-label="Filtrar por persona"><button class="filter active" data-person="Todos">Todos</button><button class="filter" data-person="Edu">Edu</button><button class="filter" data-person="Minerva">Minerva</button></div>
+      <div id="day-tasks"></div>
+     </div>
+     <aside class="insights">
+      <section class="panel people-panel"><p class="tiny-eyebrow">Trabajo en equipo</p><h3>Así va la semana</h3><div id="people-progress"></div></section>
+      <section class="side-notice"><span aria-hidden="true">✳</span><p><b>Sin sobrecargarse.</b> En prácticas priorizad lo imprescindible; las limpiezas grandes pueden esperar al fin de semana.</p></section>
+     </aside>
+    </div>
    </div>
-   <div class="view" id="view-semana" hidden><div class="page-head"><p class="eyebrow">VISTA GENERAL</p><h1>Calendario <em>semanal.</em></h1><p>Un lugar para verlo todo, sin sorpresas.</p></div><div class="toolbar"><div class="week-controls"><button id="prev-week">‹</button><strong id="week-heading"></strong><button id="next-week">›</button><button id="current-week" class="soft-btn">Esta semana</button></div><button id="new-task-week" class="primary-btn">+ Nueva tarea</button></div><div id="calendar-grid" class="calendar-grid"></div><div class="calendar-hint">Selecciona un día para abrirlo y completar tareas. Las tareas quincenales se repiten cada 14 días y las mensuales en la fecha programada.</div></div>
-   <div class="view" id="view-rutinas" hidden><div class="page-head"><p class="eyebrow">A VUESTRO GUSTO</p><h1>Nuestras <em>rutinas.</em></h1><p>Añadid, editad, reasignad o eliminad las tareas de la casa.</p></div><div class="toolbar"><div class="pill-tabs" id="frequency-filters"><button data-frequency="all" class="selected">Todas</button><button data-frequency="daily">Diarias</button><button data-frequency="weekly">Semanales</button><button data-frequency="fortnightly">Cada 15 días</button><button data-frequency="monthly">Mensuales</button></div><button class="primary-btn" id="new-task-routines">+ Añadir tarea</button></div><div class="routine-list" id="routine-list"></div></div>
-   <div class="view" id="view-actividad" hidden><div class="page-head"><p class="eyebrow">PEQUEÑAS VICTORIAS</p><h1>Lo que ya <em>habéis hecho.</em></h1><p>Los cambios se sincronizan para Edu y Minerva.</p></div><div class="activity-layout"><section class="panel"><h3>Actividad reciente</h3><div id="activity-list"></div></section><section class="panel"><h3>Cómo nos organizamos</h3><p>Elegid el horario de Minerva de esta semana. Cambiarlo ajusta los responsables de las tareas diarias sin borrar lo ya completado.</p><label for="mode-select">Horario actual</label><select id="mode-select"><option value="practicas">Prácticas (L–J 16:00–20:00)</option><option value="manana">Turno de mañana</option><option value="tarde">Turno de tarde (13:20–20:15)</option></select><p class="small-note">Edu trabaja presencialmente lunes, miércoles y jueves, y teletrabaja martes y viernes. Las tareas de quitar polvo están reservadas a Minerva.</p></section></div></div>
+
+   <div class="view" id="view-semana" hidden>
+    <div class="page-head"><p class="eyebrow">Vista general</p><h1>Calendario <em>semanal.</em></h1><p>Un lugar para verlo todo, sin sorpresas.</p></div>
+    <div class="toolbar">
+     <div class="week-controls"><button id="prev-week" class="icon-only" aria-label="Semana anterior"><svg class="ico" aria-hidden="true"><use href="#i-left"/></svg></button><strong id="week-heading"></strong><button id="next-week" class="icon-only" aria-label="Semana siguiente"><svg class="ico" aria-hidden="true"><use href="#i-right"/></svg></button></div>
+     <button id="current-week" class="soft-btn">Esta semana</button>
+     <button id="new-task-week" class="primary-btn desktop-only"><svg class="ico sm" aria-hidden="true"><use href="#i-plus"/></svg>Nueva tarea</button>
+    </div>
+    <div id="calendar-grid" class="calendar-grid"></div>
+    <p class="calendar-hint">Toca un día para abrirlo y completar tareas. Las quincenales se repiten cada 14 días y las mensuales en la fecha programada.</p>
+   </div>
+
+   <div class="view" id="view-rutinas" hidden>
+    <div class="page-head"><p class="eyebrow">A vuestro gusto</p><h1>Nuestras <em>rutinas.</em></h1><p>Toca una tarea para editarla, reasignarla o eliminarla.</p></div>
+    <div class="toolbar sticky-tabs">
+     <div class="pill-tabs" id="frequency-filters" role="group" aria-label="Filtrar por frecuencia"><button data-frequency="all" class="selected">Todas</button><button data-frequency="daily">Diarias</button><button data-frequency="weekly">Semanales</button><button data-frequency="fortnightly">Cada 15 días</button><button data-frequency="monthly">Mensuales</button><button data-frequency="once">Puntuales</button></div>
+     <button class="primary-btn desktop-only" id="new-task-routines"><svg class="ico sm" aria-hidden="true"><use href="#i-plus"/></svg>Añadir tarea</button>
+    </div>
+    <div class="routine-list" id="routine-list"></div>
+   </div>
+
+   <div class="view" id="view-actividad" hidden>
+    <div class="page-head"><p class="eyebrow">Pequeñas victorias</p><h1>Lo que ya <em>habéis hecho.</em></h1><p>Los cambios se sincronizan para Edu y Minerva.</p></div>
+    <div class="activity-layout">
+     <section class="panel activity-panel"><h3>Actividad reciente</h3><div id="activity-list"></div></section>
+     <div class="activity-side">
+      <section class="panel profile-panel"><div class="profile-row"><span class="avatar edu" id="more-avatar">E</span><div><strong id="more-name">Edu</strong><small>Sesión iniciada en este dispositivo</small></div></div><button class="soft-btn full-btn" id="more-logout"><svg class="ico sm" aria-hidden="true"><use href="#i-swap"/></svg>Cambiar de perfil</button></section>
+      <section class="panel"><h3>Cómo nos organizamos</h3><p>Elegid el horario de Minerva de esta semana. Cambiarlo ajusta los responsables de las tareas diarias sin borrar lo ya completado.</p><label for="mode-select">Horario actual</label><select id="mode-select"><option value="practicas">Prácticas (L–J 16:00–20:00)</option><option value="manana">Turno de mañana</option><option value="tarde">Turno de tarde (13:20–20:15)</option></select><p class="small-note">Edu trabaja presencialmente lunes, miércoles y jueves, y teletrabaja martes y viernes. Las tareas de quitar polvo están reservadas a Minerva.</p></section>
+     </div>
+    </div>
+   </div>
   </div>
   <footer class="footer">Hecho para Edu, Minerva y sus gatos <span>♥</span></footer>
  </main>
- <nav class="mobile-nav"><button data-mobile-view="hoy" class="active"><span>⌂</span>Hoy</button><button data-mobile-view="semana"><span>▦</span>Semana</button><button data-mobile-view="rutinas"><span>☷</span>Tareas</button><button data-mobile-view="actividad"><span>◷</span>Más</button></nav>
+
+ <button class="fab" id="fab-add" aria-label="Añadir tarea"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg></button>
+ <nav class="mobile-nav" aria-label="Navegación principal">
+  <button data-mobile-view="hoy" class="active"><span class="nav-ico"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg></span>Hoy</button>
+  <button data-mobile-view="semana"><span class="nav-ico"><svg class="ico" aria-hidden="true"><use href="#i-calendar"/></svg></span>Semana</button>
+  <button data-mobile-view="rutinas"><span class="nav-ico"><svg class="ico" aria-hidden="true"><use href="#i-list"/></svg></span>Tareas</button>
+  <button data-mobile-view="actividad"><span class="nav-ico"><svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg></span>Más</button>
+ </nav>
 </div>
-<dialog id="task-dialog" class="task-dialog"><form id="task-form" method="dialog"><div class="dialog-head"><div><p class="eyebrow">A VUESTRO RITMO</p><h2 id="dialog-title">Nueva tarea</h2></div><button class="close-dialog" type="button" id="close-dialog" aria-label="Cerrar">×</button></div><input type="hidden" id="task-id"><label for="task-title">¿Qué hay que hacer?</label><input id="task-title" required maxlength="90" placeholder="Ej. Regar las plantas"><div class="form-grid"><div><label for="task-category">Categoría</label><select id="task-category"><option>Orden</option><option>Cocina</option><option>Gatos</option><option>Suelos</option><option>Baños</option><option>Ropa</option><option>Limpieza profunda</option><option>Exterior</option><option>Otros</option></select></div><div><label for="task-assignee">Responsable</label><select id="task-assignee"><option>Edu</option><option>Minerva</option><option>Ambos</option><option>Alterno</option></select></div><div><label for="task-frequency">Repetición</label><select id="task-frequency"><option value="daily">Cada día</option><option value="weekly">Cada semana</option><option value="fortnightly">Cada 15 días</option><option value="monthly">Cada mes</option><option value="once">Una sola vez</option></select></div><div id="frequency-extra"></div></div><label for="task-description">Notas (opcional)</label><textarea id="task-description" rows="2" maxlength="280" placeholder="Consejos, materiales..."></textarea><div class="optional"><label class="checklabel"><input type="checkbox" id="task-optional"> Solo si hace falta</label><label for="task-minutes">Minutos aprox. <input type="number" id="task-minutes" min="1" max="240" value="10"></label></div><div class="dialog-actions"><button type="button" class="soft-btn" id="cancel-task">Cancelar</button><button type="submit" class="primary-btn" id="save-task">Guardar tarea</button></div></form></dialog>
-<dialog id="assign-dialog" class="task-dialog small-dialog"><div class="dialog-head"><h2>Cambiar responsable</h2><button type="button" class="close-dialog" id="assign-close">×</button></div><p class="small-note" id="assign-copy"></p><div class="assign-buttons"><button data-assign="Edu"><span class="avatar edu">E</span> Edu</button><button data-assign="Minerva"><span class="avatar minerva">M</span> Minerva</button><button data-assign="Ambos">🤝 Ambos</button></div><p class="small-note">El cambio solo se aplicará a este día.</p></dialog>
-<script type="module" src="/app.js"></script>
+
+<dialog id="task-dialog" class="task-dialog" aria-labelledby="dialog-title">
+ <form id="task-form" method="dialog" class="sheet">
+  <div class="dialog-head"><div><p class="eyebrow">A vuestro ritmo</p><h2 id="dialog-title">Nueva tarea</h2></div><button class="close-dialog" type="button" id="close-dialog" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+  <input type="hidden" id="task-id">
+  <label for="task-title">¿Qué hay que hacer?</label>
+  <input id="task-title" required maxlength="90" placeholder="Ej. Regar las plantas" autocomplete="off" enterkeyhint="done">
+  <div class="form-grid">
+   <div><label for="task-category">Categoría</label><select id="task-category"><option>Orden</option><option>Cocina</option><option>Gatos</option><option>Suelos</option><option>Baños</option><option>Ropa</option><option>Limpieza profunda</option><option>Exterior</option><option>Otros</option></select></div>
+   <div><label for="task-assignee">Responsable</label><select id="task-assignee"><option>Edu</option><option>Minerva</option><option>Ambos</option><option>Alterno</option></select></div>
+   <div><label for="task-frequency">Repetición</label><select id="task-frequency"><option value="daily">Cada día</option><option value="weekly">Cada semana</option><option value="fortnightly">Cada 15 días</option><option value="monthly">Cada mes</option><option value="once">Una sola vez</option></select></div>
+   <div id="frequency-extra"></div>
+  </div>
+  <label for="task-description">Notas (opcional)</label>
+  <textarea id="task-description" rows="2" maxlength="280" placeholder="Consejos, materiales..."></textarea>
+  <div class="optional"><label class="checklabel"><input type="checkbox" id="task-optional"> Solo si hace falta</label><label for="task-minutes">Minutos <input type="number" id="task-minutes" min="1" max="240" value="10" inputmode="numeric"></label></div>
+  <div class="dialog-actions"><button type="button" class="danger-btn" id="delete-task" hidden><svg class="ico sm" aria-hidden="true"><use href="#i-trash"/></svg>Eliminar</button><span class="spacer"></span><button type="button" class="soft-btn" id="cancel-task">Cancelar</button><button type="submit" class="primary-btn" id="save-task">Guardar tarea</button></div>
+ </form>
+</dialog>
+
+<dialog id="assign-dialog" class="task-dialog small-dialog" aria-labelledby="assign-title">
+ <div class="sheet">
+  <div class="dialog-head"><div><p class="eyebrow">Solo este día</p><h2 id="assign-title">¿Quién se encarga?</h2></div><button type="button" class="close-dialog" id="assign-close" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+  <div class="assign-task" id="assign-copy"></div>
+  <div class="assign-buttons">
+   <button data-assign="Edu"><span class="avatar edu">E</span><span>Edu</span><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg></button>
+   <button data-assign="Minerva"><span class="avatar minerva">M</span><span>Minerva</span><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg></button>
+   <button data-assign="Ambos"><span class="avatar-pair"><span class="avatar edu">E</span><span class="avatar minerva">M</span></span><span>Ambos</span><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg></button>
+  </div>
+  <p class="small-note">El cambio solo se aplica a este día; el reparto habitual no se modifica.</p>
+ </div>
+</dialog>
+<script type="module" src="/app.js?v=5"></script>
 </body></html>
