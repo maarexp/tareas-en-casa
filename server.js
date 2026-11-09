@@ -13,12 +13,15 @@ const DATA_PATH=process.env.DATA_FILE||path.join(root,'.data','hogar.json');
 const dbUrl=process.env.DATABASE_URL;
 const secret=process.env.APP_SECRET||crypto.randomBytes(32).toString('hex');
 if(!process.env.APP_SECRET) console.warn('APP_SECRET no configurado: las sesiones se invalidarán tras reiniciar.');
+if(!dbUrl&&process.env.REQUIRE_POSTGRES==='1'){console.error('REQUIRE_POSTGRES=1 pero falta DATABASE_URL: configura la conexión de Neon/PostgreSQL. No se arranca para no perder datos.');process.exit(1);}
 if(!dbUrl) console.warn('Sin DATABASE_URL: se usa archivo local SOLO para desarrollo. En producción conecta PostgreSQL.');
 let pgPool=null;
 let fileQueue=Promise.resolve();
 if(dbUrl){
   const {Pool}=await import('pg');
   pgPool=new Pool({connectionString:dbUrl,ssl:process.env.PGSSL==='require'?{rejectUnauthorized:false}:undefined});
+  // Neon cierra conexiones inactivas al suspenderse: sin este manejador el proceso se caería.
+  pgPool.on('error',err=>console.error('Conexión PostgreSQL cerrada:',err.message));
   await pgPool.query('CREATE TABLE IF NOT EXISTS hogar_state (id INTEGER PRIMARY KEY, payload JSONB NOT NULL)');
 }
 async function loadFile(){try{return JSON.parse(await fs.readFile(DATA_PATH,'utf8'));}catch(err){if(err.code==='ENOENT')return null; throw err;}}

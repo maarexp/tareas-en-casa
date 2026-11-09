@@ -24,7 +24,16 @@ npm start
 
 Abre `http://localhost:3000`. En local, sin `DATABASE_URL`, se guarda en `.data/hogar.json`.
 
-## Publicación en Replit — importante
+## Publicación gratuita en Render + Neon
+
+1. En **Neon**, crea un proyecto (región Frankfurt) y copia la *connection string* (`postgresql://…?sslmode=require`). No la subas a Git.
+2. En **Render**, pulsa **New → Blueprint** y selecciona este repositorio. Render lee `render.yaml` y crea el servicio `en-casa-edu-minerva` en el plan **Free**.
+3. Cuando te pida `DATABASE_URL`, pega la conexión de Neon. `APP_SECRET` se genera solo; `REQUIRE_POSTGRES=1` impide arrancar sin base de datos.
+4. Comprueba `https://<tu-servicio>.onrender.com/api/health` → `{"ok":true,"backend":"postgres"}`.
+
+Render Free suspende el servicio tras 15 minutos sin uso; la primera carga posterior tarda alrededor de un minuto. Los datos se mantienen en Neon.
+
+## Publicación en Replit
 
 1. Importa los archivos de este ZIP como proyecto **Node.js** en Replit.
 2. En el entorno del proyecto, instala dependencias (`npm install`) y configura **PostgreSQL** (la base de datos gestionada de Replit). Asegúrate de que la URL de la base de datos esté disponible como **secreto `DATABASE_URL`**, también en el entorno de publicación.
