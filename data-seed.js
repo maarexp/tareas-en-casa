@@ -1,57 +1,43 @@
 const modes = {
-  practicas: 'Durante las prácticas',
-  manana: 'Turno de mañana',
-  tarde: 'Turno de tarde'
+  practicas: 'Mañana + prácticas L–J',
+  manana: 'Mañana (vuelve a las 16:00)',
+  tarde: 'Tarde (de 14:00 a 20:30)'
+};
+// ---------------------------------------------------------------------------
+// Reparto automático de las tareas diarias según quién está en casa cada día.
+//  · Edu: «oficina» (sale 6:30, vuelve 19:30) los lunes, miércoles y jueves; «casa» (teletrabajo) martes y viernes.
+//    Un día suelto se puede cambiar desde la app (state.workdays).
+//  · Minerva, según el horario elegido:
+//      manana → trabaja por la mañana y está en casa desde las 16:00.
+//      tarde  → en casa por la mañana; fuera de 14:00 a 20:30.
+//      larga  → mañana + prácticas (L–J): fuera hasta ~20:30; solo tareas cortas antes de salir.
+//  · Fin de semana: los dos en casa. En tarde y prácticas Minerva hace más para compensar la semana.
+// ---------------------------------------------------------------------------
+export const MINERVA_WEEK = {
+  manana: ['manana','manana','manana','manana','manana'],
+  tarde: ['tarde','tarde','tarde','tarde','tarde'],
+  practicas: ['larga','larga','larga','larga','manana']
+};
+const WHO = {E:'Edu', M:'Minerva', A:'Ambos', '~':'Alterno'};
+const who = letters => [...letters].map(c => WHO[c]);
+// oficina / casa: quién la hace con Minerva de [mañana, tarde, prácticas]. finde: [sábado, domingo] según el horario.
+const plan = (oficina, casa, finde) => {
+  const [om,ot,ol] = who(oficina), [cm,ct,cl] = who(casa);
+  return {oficina:{manana:om,tarde:ot,larga:ol}, casa:{manana:cm,tarde:ct,larga:cl}, finde:{manana:who(finde[0]),tarde:who(finde[1]),practicas:who(finde[2])}};
 };
 const task = (id, title, category, frequency, assignee, options={}) => ({id,title,category,frequency,assignee,optional:false,...options});
-const daily = (id,title,category,plan,options={}) => task(id,title,category,'daily','Alterno',{plan,...options});
-// Índices: lunes=0 ... domingo=6. "Alterno" alterna Edu/Minerva cada semana.
+const daily = (id,title,category,p,options={}) => task(id,title,category,'daily','Alterno',{plan:p,...options});
 const seedTasks = [
-  daily('cama','Hacer la cama','Orden',{
-    practicas:['Minerva','Edu','Minerva','Minerva','Edu','Edu','Alterno'],
-    manana:['Minerva','Edu','Minerva','Minerva','Edu','Edu','Alterno'],
-    tarde:['Minerva','Edu','Minerva','Minerva','Edu','Edu','Alterno']
-  },{emoji:'🛏️',minutes:4,description:'Lunes, miércoles y jueves Minerva; martes, viernes y sábado Edu; domingo se alterna.'}),
-  daily('suelo-abajo','Barrer o aspirar planta baja','Suelos',{
-    practicas:['Edu','Minerva','Edu','Edu','Edu','Minerva','Minerva'],
-    manana:['Edu','Minerva','Edu','Minerva','Edu','Minerva','Edu'],
-    tarde:['Minerva','Edu','Minerva','Edu','Edu','Minerva','Edu']
-  },{emoji:'🧹',minutes:9,description:'Mejor aspiradora con filtro HEPA o mopa para no levantar polvo.'}),
-  daily('cena-tupper','Preparar cena + táper del día siguiente','Cocina',{
-    practicas:['Edu','Edu','Edu','Edu','Minerva','Minerva','Edu'],
-    manana:['Minerva','Edu','Minerva','Edu','Minerva','Edu','Minerva'],
-    tarde:['Edu','Edu','Edu','Edu','Edu','Minerva','Minerva']
-  },{emoji:'🍲',minutes:35,description:'Siempre cocinar el día anterior para llevar la comida en táper. El domingo, preparar el lunes.'}),
-  daily('recoger-cocina','Recoger encimera, platos y fregadero','Cocina',{
-    practicas:['Minerva','Minerva','Minerva','Minerva','Edu','Edu','Minerva'],
-    manana:['Edu','Minerva','Edu','Minerva','Edu','Minerva','Edu'],
-    tarde:['Minerva','Minerva','Minerva','Minerva','Minerva','Edu','Edu']
-  },{emoji:'🍽️',minutes:12,description:'Normalmente se encarga quien no cocina.'}),
-  daily('orden-salon','Orden general: mantas, sofá y objetos','Orden',{
-    practicas:['Minerva','Edu','Minerva','Edu','Edu','Minerva','Alterno'],
-    manana:['Minerva','Edu','Minerva','Edu','Minerva','Edu','Alterno'],
-    tarde:['Edu','Minerva','Edu','Minerva','Edu','Minerva','Alterno']
-  },{emoji:'🛋️',minutes:6}),
-  daily('gatos-comida','Dar comida a los gatos (mañana y noche)','Gatos',{
-    practicas:['Minerva','Minerva','Minerva','Minerva','Minerva','Edu','Alterno'],
-    manana:['Minerva','Minerva','Minerva','Minerva','Minerva','Edu','Alterno'],
-    tarde:['Minerva','Minerva','Minerva','Minerva','Minerva','Edu','Alterno']
-  },{emoji:'🐈',minutes:6,description:'Comprobar las dos tomas; si una persona no está, la otra la cubre.'}),
-  daily('gatos-agua','Cambiar agua y comprobar bebederos','Gatos',{
-    practicas:['Edu','Edu','Edu','Edu','Edu','Minerva','Alterno'],
-    manana:['Edu','Edu','Edu','Edu','Edu','Minerva','Alterno'],
-    tarde:['Edu','Edu','Edu','Edu','Edu','Minerva','Alterno']
-  },{emoji:'💧',minutes:3}),
-  daily('gatos-areneros','Recoger areneros y revisar arena','Gatos',{
-    practicas:['Edu','Edu','Edu','Edu','Edu','Minerva','Alterno'],
-    manana:['Edu','Edu','Edu','Edu','Edu','Minerva','Alterno'],
-    tarde:['Edu','Edu','Edu','Edu','Edu','Minerva','Alterno']
-  },{emoji:'🐾',minutes:7,description:'Retirar deposiciones a diario. Si se ensucia mucho, hacer un segundo repaso.'}),
-  daily('basura','Revisar basura y reciclaje','Cocina',{
-    practicas:['Edu','Minerva','Edu','Minerva','Edu','Minerva','Alterno'],
-    manana:['Edu','Minerva','Edu','Minerva','Edu','Minerva','Alterno'],
-    tarde:['Edu','Minerva','Edu','Minerva','Edu','Minerva','Alterno']
-  },{emoji:'♻️',minutes:3,optional:true,description:'Sacar solo si hace falta.'}),
+  //                                                                       oficina  casa    sáb-dom: mañana tarde prácticas
+  daily('cama','Hacer la cama','Orden',                                    plan('MMM','EMM',['EM','EM','EM']),{emoji:'🛏️',minutes:4,description:'La hace quien sale más tarde de casa (Edu sale a las 6:30 los días de oficina).'}),
+  daily('suelo-abajo','Barrer o aspirar planta baja','Suelos',             plan('MME','EME',['ME','MM','MM']),{emoji:'🧹',minutes:9,description:'Mejor aspiradora con filtro HEPA o mopa para no levantar polvo.'}),
+  daily('cena-tupper','Preparar cena + táper del día siguiente','Cocina',  plan('MEE','EEE',['ME','MM','MM']),{emoji:'🍲',minutes:35,description:'Siempre cocinar el día anterior para llevar la comida en táper. El domingo, preparar el lunes.'}),
+  daily('recoger-cocina','Recoger encimera, platos y fregadero','Cocina',  plan('EME','MME',['EM','EE','EE']),{emoji:'🍽️',minutes:12,description:'Normalmente quien no cocina; con prácticas, de lunes a jueves lo hace Edu.'}),
+  daily('orden-salon','Orden general: mantas, sofá y objetos','Orden',     plan('EEE','MEE',['E~','ME','ME']),{emoji:'🛋️',minutes:6}),
+  daily('gatos-comida','Dar comida a los gatos (mañana y noche)','Gatos',  plan('MMM','MMM',['E~','MM','MM']),{emoji:'🐈',minutes:6,description:'Comprobar las dos tomas; si una persona no está, la otra la cubre.'}),
+  daily('gatos-agua','Cambiar agua y comprobar bebederos','Gatos',         plan('MMM','EEM',['M~','ME','ME']),{emoji:'💧',minutes:3}),
+  daily('gatos-areneros','Recoger areneros y revisar arena','Gatos',       plan('EMM','EEM',['M~','ME','ME']),{emoji:'🐾',minutes:7,description:'Retirar deposiciones a diario. Si se ensucia mucho, hacer un segundo repaso.'}),
+  daily('basura','Revisar basura y reciclaje','Cocina',                    plan('EEE','MEE',['M~','M~','M~']),{emoji:'♻️',minutes:3,optional:true,description:'Sacar solo si hace falta.'}),
   task('bano-abajo','Limpiar baño de abajo','Baños','weekly','Edu',{weekday:4,emoji:'🚿',minutes:22}),
   task('bano-arriba','Limpiar baño de arriba','Baños','weekly','Minerva',{weekday:6,emoji:'🛁',minutes:22}),
   task('fregar-abajo','Fregar suelo de abajo','Suelos','weekly','Edu',{weekday:5,emoji:'🪣',minutes:18}),
@@ -84,8 +70,28 @@ const seedTasks = [
   task('rincones','Polvo en rincones altos y lámparas accesibles','Limpieza profunda','monthly','Minerva',{monthDay:18,emoji:'🪶',minutes:20}),
   task('gatos-inventario','Revisar pienso, arena, comederos y rascadores','Gatos','monthly','Ambos',{monthDay:27,emoji:'🐱',minutes:15})
 ];
+// Versión del reparto. v2: reparto según quién está en casa (oficina/teletrabajo de Edu y horario real de Minerva).
+export const PLAN_VERSION = 2;
+const OLD_DESCRIPTIONS = {
+  cama:'Lunes, miércoles y jueves Minerva; martes, viernes y sábado Edu; domingo se alterna.',
+  'recoger-cocina':'Normalmente se encarga quien no cocina.'
+};
+// Actualiza una casa guardada con un reparto antiguo: sustituye el reparto automático de las tareas que lo conservan
+// («Según horario»). No toca completados, reasignaciones manuales ni tareas editadas con responsable fijo.
+export function upgradeState(state){
+  if(!state||(state.planVersion||1)>=PLAN_VERSION) return false;
+  for(const seed of seedTasks.filter(t=>t.plan)){
+    const task=state.tasks.find(t=>t.id===seed.id);
+    if(!task?.plan) continue;
+    task.plan=JSON.parse(JSON.stringify(seed.plan));
+    if(OLD_DESCRIPTIONS[seed.id]&&task.description===OLD_DESCRIPTIONS[seed.id]) task.description=seed.description;
+  }
+  state.planVersion=PLAN_VERSION;
+  return true;
+}
 export const createInitialState = ({salt,pinHash})=>({
   setup:{salt,pinHash},
+  planVersion:PLAN_VERSION,
   settings:{mode:'practicas',updatedAt:new Date().toISOString()},
   tasks:seedTasks,
   completions:{},

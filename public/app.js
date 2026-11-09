@@ -72,9 +72,17 @@ const teleDays=()=>state.teleworkDays||[1,4];
 const isWorkday=d=>dow(d)<5;
 const habitualPlace=d=>teleDays().includes(dow(d))?'casa':'oficina';
 const placeOf=d=>(isWorkday(d)&&state.workdays?.[iso(d)])||habitualPlace(d);
-// Con un cambio puntual, las tareas diarias de ese día se reparten como un día tipo: el de teletrabajo (martes) o el de oficina (lunes).
-function planDay(d){const w=state.workdays?.[iso(d)];if(!w||!isWorkday(d)||w===habitualPlace(d))return dow(d);return w==='casa'?teleDays()[0]:[0,1,2,3,4].find(i=>!teleDays().includes(i));}
-function assigned(t,d){const key=`${t.id}@${iso(d)}`;if(state.overrides[key])return state.overrides[key];let a=(t.plan?.[state.settings.mode]||t.plan?.practicas)?.[planDay(d)]||t.assignee;return a==='Alterno'?(weekNumber(d)%2===0?'Edu':'Minerva'):a;}
+// Reparto automático: cada tarea diaria depende de dónde está Edu ese día (oficina / casa, con los cambios puntuales)
+// y del horario de Minerva (mañana / tarde / mañana + prácticas). El fin de semana tiene su propio reparto por horario.
+const MINERVA_WEEK={manana:Array(5).fill('manana'),tarde:Array(5).fill('tarde'),practicas:['larga','larga','larga','larga','manana']};
+function planned(t,d){
+  const p=t.plan,mode=state.settings.mode,day=dow(d);if(!p)return t.assignee;
+  if(!p.oficina)return (p[mode]||p.practicas)?.[day];
+  if(day>4)return (p.finde[mode]||p.finde.practicas)[day-5];
+  const minerva=(state.minervaWeek?.[mode]||MINERVA_WEEK[mode]||MINERVA_WEEK.practicas)[day];
+  return p[placeOf(d)]?.[minerva];
+}
+function assigned(t,d){const key=`${t.id}@${iso(d)}`;if(state.overrides[key])return state.overrides[key];let a=planned(t,d)||t.assignee;return a==='Alterno'?(weekNumber(d)%2===0?'Edu':'Minerva'):a;}
 function forPerson(t,d,who){if(!who||who==='Todos')return true;const a=assigned(t,d);return a===who||a==='Ambos';}
 function tasksFor(d,who='Todos'){return state.tasks.filter(t=>occurs(t,d)&&forPerson(t,d,who)).sort((a,b)=>FREQ_ORDER.indexOf(a.frequency)-FREQ_ORDER.indexOf(b.frequency)||orderTask(a,b));}
 function completed(t,d){return Boolean(state.completions[`${t.id}@${iso(d)}`]);}

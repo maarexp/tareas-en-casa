@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
 import {fileURLToPath} from 'node:url';
+import {createInitialState,upgradeState,PLAN_VERSION} from '../data-seed.js';
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 async function freePort(){return new Promise((resolve,reject)=>{const s=net.createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>resolve(p));});s.on('error',reject);});}
 async function request(base,path,method='GET',body,cookie){return fetch(base+path,{method,headers:{...(body?{'content-type':'application/json'}:{}),...(method!=='GET'?{'x-hogar-client':'1'}:{}),...(cookie?{cookie}:{})},body:body?JSON.stringify(body):undefined});}
@@ -20,7 +21,7 @@ test('flujo compartido: crear casa, entrar, marcar, reasignar, añadir y cambiar
  r=await request(base,'/api/login','POST',{pin:'incorrecto',actor:'Minerva'});assert.equal(r.status,401);
  r=await request(base,'/api/login','POST',{pin:'nuestrohogar-123456',actor:'Minerva'});assert.equal(r.status,200);const cookMinerva=r.headers.get('set-cookie').split(';')[0];
  r=await request(base,'/api/state','GET',undefined,cookMinerva);let state=await r.json();assert.equal(state.actor,'Minerva');assert.ok(state.tasks.length>=30);
- const t1=state.tasks.find(x=>x.id==='cama');assert.equal(t1.plan.practicas[0],'Minerva');
+ const t1=state.tasks.find(x=>x.id==='cama');assert.equal(t1.plan.oficina.larga,'Minerva');assert.equal(t1.plan.casa.manana,'Edu');assert.deepEqual(state.minervaWeek.practicas,['larga','larga','larga','larga','manana']);
  r=await request(base,'/api/toggle','POST',{taskId:'cama',date:'2026-11-09',done:true},cookEdu);assert.equal(r.status,200);
  r=await request(base,'/api/state','GET',undefined,cookMinerva);state=await r.json();assert.equal(state.completions['cama@2026-11-09'].by,'Edu');
  r=await request(base,'/api/override','POST',{taskId:'cama',date:'2026-11-09',assignee:'Edu'},cookMinerva);assert.equal(r.status,200);
@@ -39,4 +40,16 @@ test('flujo compartido: crear casa, entrar, marcar, reasignar, añadir y cambiar
  assert.ok(state.activity.some(a=>a.message.startsWith('Edu teletrabaja el ')));
  r=await request(base,'/api/setup','POST',{pin:'alguien-segundo',actor:'Edu'});assert.equal(r.status,409);
  r=await request(base,'/api/task','POST',{title:'Sin login',frequency:'daily',assignee:'Edu'},undefined);assert.equal(r.status,401);
+});
+test('migración: una casa antigua recibe el reparto por disponibilidad sin perder lo demás',()=>{
+ const old=JSON.parse(JSON.stringify(createInitialState({salt:'s',pinHash:'h'})));delete old.planVersion;
+ const cama=old.tasks.find(t=>t.id==='cama');cama.plan={practicas:['Minerva','Edu','Minerva','Minerva','Edu','Edu','Alterno'],manana:['Minerva','Edu','Minerva','Minerva','Edu','Edu','Alterno'],tarde:['Minerva','Edu','Minerva','Minerva','Edu','Edu','Alterno']};cama.description='Lunes, miércoles y jueves Minerva; martes, viernes y sábado Edu; domingo se alterna.';
+ const cena=old.tasks.find(t=>t.id==='cena-tupper');cena.title='Cena y táper';
+ const fija=old.tasks.find(t=>t.id==='orden-salon');delete fija.plan;fija.assignee='Minerva';
+ old.completions['cama@2026-11-09']={by:'Edu',at:'x'};old.overrides['basura@2026-11-10']='Ambos';
+ assert.equal(upgradeState(old),true);assert.equal(old.planVersion,PLAN_VERSION);
+ assert.equal(cama.plan.practicas,undefined);assert.deepEqual(cama.plan.oficina,{manana:'Minerva',tarde:'Minerva',larga:'Minerva'});assert.deepEqual(cama.plan.finde.practicas,['Edu','Minerva']);assert.ok(cama.description.startsWith('La hace quien'));
+ assert.equal(cena.title,'Cena y táper');assert.equal(fija.plan,undefined);assert.equal(fija.assignee,'Minerva');
+ assert.ok(old.completions['cama@2026-11-09']);assert.equal(old.overrides['basura@2026-11-10'],'Ambos');
+ assert.equal(upgradeState(old),false,'solo se aplica una vez');
 });

@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import {createReadStream} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import crypto from 'node:crypto';
-import {createInitialState} from './data-seed.js';
+import {createInitialState,upgradeState,MINERVA_WEEK,modes} from './data-seed.js';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
 const staticRoot=path.join(root,'public');
@@ -50,7 +50,7 @@ function nearDate(s){const v=new Date(s+'T12:00:00Z').getTime(),now=Date.now();r
 const longDate=s=>new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(s+'T12:00:00Z')).replace(',','');
 function checkOrigin(req){if(['GET','HEAD','OPTIONS'].includes(req.method))return; if(req.headers['x-hogar-client']!=='1')throw httpError(403,'Solicitud no autorizada');const origin=req.headers.origin;if(origin){const o=new URL(origin);const forwarded=req.headers['x-forwarded-host']?.split(',')[0]?.trim();const host=forwarded||req.headers.host;if(o.host!==host)throw httpError(403,'Origen no permitido');}}
 function needLogin(req){const sess=cookie(req);if(!sess)throw httpError(401,'Introduce el código de la casa');return sess;}
-function publicState(s,actor){return {actor,settings:s.settings,tasks:s.tasks,completions:s.completions,overrides:s.overrides,workdays:s.workdays||{},teleworkDays:TELEWORK_DAYS,activity:s.activity.slice(-65)};}
+function publicState(s,actor){return {actor,settings:s.settings,tasks:s.tasks,completions:s.completions,overrides:s.overrides,workdays:s.workdays||{},teleworkDays:TELEWORK_DAYS,minervaWeek:MINERVA_WEEK,activity:s.activity.slice(-65)};}
 function logActivity(s,actor,message){s.activity.push({id:crypto.randomUUID(),actor,message,at:new Date().toISOString()});if(s.activity.length>200)s.activity=s.activity.slice(-200);}
 const categories=['Orden','Cocina','Gatos','Suelos','Baños','Ropa','Limpieza profunda','Exterior','Otros'];
 function validateTask(t){
@@ -102,7 +102,7 @@ const server=http.createServer(async(req,res)=>{
       if(p==='/api/state'&&req.method==='GET'){const s=await getState();return json(res,200,publicState(s,actor));}
       if(p==='/api/settings'&&req.method==='PUT'){
         const {mode}=await parseBody(req);if(!['practicas','manana','tarde'].includes(mode))throw httpError(400,'Modo incorrecto');
-        const s=await mutate(s=>{s.settings={mode,updatedAt:new Date().toISOString()};logActivity(s,actor,`Cambió el horario a ${mode}`);return s;});return json(res,200,publicState(s,actor));
+        const s=await mutate(s=>{s.settings={mode,updatedAt:new Date().toISOString()};logActivity(s,actor,`Cambió el horario de Minerva: ${modes[mode]}`);return s;});return json(res,200,publicState(s,actor));
       }
       if(p==='/api/toggle'&&req.method==='POST'){
         const {taskId,date,done}=await parseBody(req);
@@ -143,4 +143,6 @@ const server=http.createServer(async(req,res)=>{
     throw httpError(405,'Método no permitido');
   }catch(err){console.error(err.status||500,err.message);if(!res.headersSent)json(res,err.status||500,{error:err.status?err.message:'Error interno del servidor'});else res.end();}
 });
+// Al arrancar, actualiza la casa guardada si su reparto es de una versión anterior (p. ej. el nuevo horario de prácticas).
+try{await mutate(s=>upgradeState(s)?s:undefined);}catch(err){console.error('No se pudo actualizar el reparto guardado:',err.message);}
 server.listen(PORT,()=>console.log(`Hogar Edu y Minerva: http://localhost:${PORT}`));
