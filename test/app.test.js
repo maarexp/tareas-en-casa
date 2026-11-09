@@ -21,7 +21,7 @@ test('flujo compartido: crear casa, entrar, marcar, reasignar, añadir y cambiar
  r=await request(base,'/api/login','POST',{pin:'incorrecto',actor:'Minerva'});assert.equal(r.status,401);
  r=await request(base,'/api/login','POST',{pin:'nuestrohogar-123456',actor:'Minerva'});assert.equal(r.status,200);const cookMinerva=r.headers.get('set-cookie').split(';')[0];
  r=await request(base,'/api/state','GET',undefined,cookMinerva);let state=await r.json();assert.equal(state.actor,'Minerva');assert.ok(state.tasks.length>=30);
- const t1=state.tasks.find(x=>x.id==='cama');assert.equal(t1.plan.oficina.larga,'Minerva');assert.equal(t1.plan.casa.manana,'Edu');assert.deepEqual(state.minervaWeek.practicas,['larga','larga','larga','larga','manana']);
+ const t1=state.tasks.find(x=>x.id==='cama');assert.equal(t1.plan.oficina.larga,'Minerva');assert.equal(t1.plan.casa.manana,'Edu');assert.deepEqual(state.minervaWeek.practicas,['larga','larga','larga','larga','manana','manana']);assert.equal(state.tasks.find(x=>x.id==='recoger-cocina').plan.oficina.larga,'Minerva');
  r=await request(base,'/api/toggle','POST',{taskId:'cama',date:'2026-11-09',done:true},cookEdu);assert.equal(r.status,200);
  r=await request(base,'/api/state','GET',undefined,cookMinerva);state=await r.json();assert.equal(state.completions['cama@2026-11-09'].by,'Edu');
  r=await request(base,'/api/override','POST',{taskId:'cama',date:'2026-11-09',assignee:'Edu'},cookMinerva);assert.equal(r.status,200);
@@ -48,8 +48,12 @@ test('migración: una casa antigua recibe el reparto por disponibilidad sin perd
  const fija=old.tasks.find(t=>t.id==='orden-salon');delete fija.plan;fija.assignee='Minerva';
  old.completions['cama@2026-11-09']={by:'Edu',at:'x'};old.overrides['basura@2026-11-10']='Ambos';
  assert.equal(upgradeState(old),true);assert.equal(old.planVersion,PLAN_VERSION);
- assert.equal(cama.plan.practicas,undefined);assert.deepEqual(cama.plan.oficina,{manana:'Minerva',tarde:'Minerva',larga:'Minerva'});assert.deepEqual(cama.plan.finde.practicas,['Edu','Minerva']);assert.ok(cama.description.startsWith('La hace quien'));
+ assert.equal(cama.plan.practicas,undefined);assert.deepEqual(cama.plan.oficina,{manana:'Minerva',tarde:'Minerva',larga:'Minerva'});assert.equal(cama.plan.domingo,'Edu');assert.ok(cama.description.startsWith('La hace quien'));
  assert.equal(cena.title,'Cena y táper');assert.equal(fija.plan,undefined);assert.equal(fija.assignee,'Minerva');
  assert.ok(old.completions['cama@2026-11-09']);assert.equal(old.overrides['basura@2026-11-10'],'Ambos');
  assert.equal(upgradeState(old),false,'solo se aplica una vez');
+ // Una casa ya migrada a la v2 (fin de semana fijo, Edu recogía con prácticas) también se actualiza
+ const v2=JSON.parse(JSON.stringify(createInitialState({salt:'s',pinHash:'h'})));v2.planVersion=2;
+ const rec=v2.tasks.find(t=>t.id==='recoger-cocina');rec.plan={oficina:{manana:'Edu',tarde:'Minerva',larga:'Edu'},casa:{manana:'Minerva',tarde:'Minerva',larga:'Edu'},finde:{manana:['Edu','Minerva'],tarde:['Edu','Edu'],practicas:['Edu','Edu']}};rec.description='Normalmente quien no cocina; con prácticas, de lunes a jueves lo hace Edu.';
+ assert.equal(upgradeState(v2),true);assert.equal(rec.plan.oficina.larga,'Minerva');assert.equal(rec.plan.finde,undefined);assert.equal(rec.description,'Normalmente se encarga quien no cocina.');
 });

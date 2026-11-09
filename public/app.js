@@ -72,15 +72,15 @@ const teleDays=()=>state.teleworkDays||[1,4];
 const isWorkday=d=>dow(d)<5;
 const habitualPlace=d=>teleDays().includes(dow(d))?'casa':'oficina';
 const placeOf=d=>(isWorkday(d)&&state.workdays?.[iso(d)])||habitualPlace(d);
-// Reparto automático: cada tarea diaria depende de dónde está Edu ese día (oficina / casa, con los cambios puntuales)
-// y del horario de Minerva (mañana / tarde / mañana + prácticas). El fin de semana tiene su propio reparto por horario.
-const MINERVA_WEEK={manana:Array(5).fill('manana'),tarde:Array(5).fill('tarde'),practicas:['larga','larga','larga','larga','manana']};
+// Reparto automático: cada tarea diaria depende de dónde está Edu ese día (oficina / casa, con los cambios puntuales;
+// el sábado no trabaja) y del horario de Minerva, que trabaja de lunes a sábado. El domingo tiene su propio reparto.
+const MINERVA_WEEK={manana:Array(6).fill('manana'),tarde:Array(6).fill('tarde'),practicas:['larga','larga','larga','larga','manana','manana']};
 function planned(t,d){
   const p=t.plan,mode=state.settings.mode,day=dow(d);if(!p)return t.assignee;
   if(!p.oficina)return (p[mode]||p.practicas)?.[day];
-  if(day>4)return (p.finde[mode]||p.finde.practicas)[day-5];
+  if(day===6)return p.domingo;
   const minerva=(state.minervaWeek?.[mode]||MINERVA_WEEK[mode]||MINERVA_WEEK.practicas)[day];
-  return p[placeOf(d)]?.[minerva];
+  return p[day===5?'casa':placeOf(d)]?.[minerva];
 }
 function assigned(t,d){const key=`${t.id}@${iso(d)}`;if(state.overrides[key])return state.overrides[key];let a=planned(t,d)||t.assignee;return a==='Alterno'?(weekNumber(d)%2===0?'Edu':'Minerva'):a;}
 function forPerson(t,d,who){if(!who||who==='Todos')return true;const a=assigned(t,d);return a===who||a==='Ambos';}
