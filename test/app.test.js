@@ -21,7 +21,7 @@ test('flujo compartido: crear casa, entrar, marcar, reasignar, añadir y cambiar
  r=await request(base,'/api/login','POST',{pin:'incorrecto',actor:'Minerva'});assert.equal(r.status,401);
  r=await request(base,'/api/login','POST',{pin:'nuestrohogar-123456',actor:'Minerva'});assert.equal(r.status,200);const cookMinerva=r.headers.get('set-cookie').split(';')[0];
  r=await request(base,'/api/state','GET',undefined,cookMinerva);let state=await r.json();assert.equal(state.actor,'Minerva');assert.ok(state.tasks.length>=30);
- const t1=state.tasks.find(x=>x.id==='cama');assert.equal(t1.plan.oficina.larga,'Minerva');assert.equal(t1.plan.casa.manana,'Edu');assert.deepEqual(state.minervaWeek.practicas,['larga','larga','larga','larga','manana','manana']);assert.equal(state.tasks.find(x=>x.id==='recoger-cocina').plan.oficina.larga,'Minerva');
+ const t1=state.tasks.find(x=>x.id==='cama');assert.equal(t1.plan.oficina.larga,'Minerva');assert.equal(t1.plan.casa.manana,'Edu');assert.deepEqual(state.minervaWeek.practicas,['larga','larga','larga','larga','manana','manana']);assert.equal(state.minervaWeek.tarde[5],'manana','el sábado siempre es de mañana');assert.equal(state.tasks.find(x=>x.id==='recoger-cocina').plan.oficina.larga,'Minerva');
  r=await request(base,'/api/toggle','POST',{taskId:'cama',date:'2026-11-09',done:true},cookEdu);assert.equal(r.status,200);
  r=await request(base,'/api/state','GET',undefined,cookMinerva);state=await r.json();assert.equal(state.completions['cama@2026-11-09'].by,'Edu');
  r=await request(base,'/api/override','POST',{taskId:'cama',date:'2026-11-09',assignee:'Edu'},cookMinerva);assert.equal(r.status,200);

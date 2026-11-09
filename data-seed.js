@@ -1,23 +1,23 @@
 const modes = {
   practicas: 'Mañana + prácticas L–J',
-  manana: 'Mañana (vuelve a las 16:00)',
-  tarde: 'Tarde (de 14:00 a 20:30)'
+  manana: 'Mañana (8:15–16:00)',
+  tarde: 'Tarde (14:00–20:30)'
 };
 // ---------------------------------------------------------------------------
 // Reparto automático de las tareas diarias según quién está en casa cada día.
 //  · Edu: «oficina» (sale 6:30, vuelve 19:30) los lunes, miércoles y jueves; «casa» (teletrabajo) martes y viernes.
 //    Un día suelto se puede cambiar desde la app (state.workdays). El sábado no trabaja: cuenta como «casa».
-//  · Minerva trabaja de lunes a sábado según el horario elegido:
-//      manana → trabaja por la mañana y está en casa desde las 16:00.
+//  · Minerva trabaja de lunes a sábado. De lunes a viernes, según el horario elegido:
+//      manana → sale ~8:15 y está en casa desde las 16:00.
 //      tarde  → en casa por la mañana; fuera de 14:00 a 20:30.
-//      larga  → mañana + prácticas (L–J): fuera hasta ~20:30; tareas cortas antes de salir y recoger la cena.
-//    Con prácticas, el viernes y el sábado son solo de mañana.
+//      larga  → mañana + prácticas (L–J): fuera de ~8:15 a ~20:30; tareas cortas antes de salir y recoger la cena.
+//    Con prácticas, el viernes es solo de mañana. El sábado trabaja siempre de ~9:15 a ~15:20: cuenta como día de mañana.
 //  · Domingo: los dos libres; a medias (Edu cocina y prepara el táper del lunes; Minerva recoge y hace lo demás).
 //  · En todos los casos recoge la cocina quien no ha cocinado.
 // ---------------------------------------------------------------------------
 export const MINERVA_WEEK = {
   manana: ['manana','manana','manana','manana','manana','manana'],
-  tarde: ['tarde','tarde','tarde','tarde','tarde','tarde'],
+  tarde: ['tarde','tarde','tarde','tarde','tarde','manana'],
   practicas: ['larga','larga','larga','larga','manana','manana']
 };
 const WHO = {E:'Edu', M:'Minerva', A:'Ambos', '~':'Alterno'};

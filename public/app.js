@@ -74,7 +74,7 @@ const habitualPlace=d=>teleDays().includes(dow(d))?'casa':'oficina';
 const placeOf=d=>(isWorkday(d)&&state.workdays?.[iso(d)])||habitualPlace(d);
 // Reparto automático: cada tarea diaria depende de dónde está Edu ese día (oficina / casa, con los cambios puntuales;
 // el sábado no trabaja) y del horario de Minerva, que trabaja de lunes a sábado. El domingo tiene su propio reparto.
-const MINERVA_WEEK={manana:Array(6).fill('manana'),tarde:Array(6).fill('tarde'),practicas:['larga','larga','larga','larga','manana','manana']};
+const MINERVA_WEEK={manana:Array(6).fill('manana'),tarde:['tarde','tarde','tarde','tarde','tarde','manana'],practicas:['larga','larga','larga','larga','manana','manana']};
 function planned(t,d){
   const p=t.plan,mode=state.settings.mode,day=dow(d);if(!p)return t.assignee;
   if(!p.oficina)return (p[mode]||p.practicas)?.[day];
